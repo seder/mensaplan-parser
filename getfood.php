@@ -1,6 +1,6 @@
 <?php
 
-  include("libs/simple_html_dom.php");
+  include("./libs/simple_html_dom.php");
 
   $plans = array();
   $plansHtml = array();
@@ -57,6 +57,7 @@
     $site->load_file($url);
 
     $Ps = $site->find("DIV");
+    //$Ps = $site->find("P");
     $elements = array();
     
     $rows = array();
