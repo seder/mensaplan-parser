@@ -1,6 +1,6 @@
 <?php
 
-  include("../www/anzeige/libs/simple_html_dom.php");
+  include("libs/simple_html_dom.php");
 
   $plans = array();
   $plansHtml = array();
