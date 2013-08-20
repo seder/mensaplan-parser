@@ -1,10 +1,14 @@
 <?php
-
   include("./libs/simple_html_dom.php");
-
+  
+  // path for wget
+  $pfad = "/users/student1/s_sfuchs/public_html/mensaplan-parser/";
+  
+  // save XML and JSON to this directory
+  $outputDir = "/soft/www/root/mensaplan/data/";
+  
   $plans = array();
   $plansHtml = array();
-
   $plans = getPlans();
 
   $timestamp = time();
@@ -47,7 +51,7 @@
   }
 
   function parsePlan ($posy, $posx, $maxposy, $maxposx,
-                      $timestamp, $url, $place, $json) {
+                      $timestamp, $week, $url, $place, $json) {
 
     // some elements are further left / right than the headline element for this
     // row, the buffer exists to account for this.
@@ -65,7 +69,7 @@
     $columnsNames = array();
 
     $food = array(array());
-
+    
     foreach ( $Ps as $P ){
       $P->innertext=strip_tags($P->innertext);
       $P->innertext = str_replace("&#160;"," ",$P->innertext);
@@ -136,7 +140,7 @@
     for ( $i = 0; $i < sizeof($rows); $i++){
       for ( $j = 0; $j < sizeof($columns); $j++){  
         if ( $food[$i][$j] != "" ){
-          $json[$place][date("Y-m-d", $timestamp)][$columnsNames[$j]]=
+          $json[$place][$week][date("Y-m-d", $timestamp)][$columnsNames[$j]]=
               str_replace("- ", "", trim($food[$i][$j]));
         }
       }
@@ -148,8 +152,9 @@
   // download & parse
   $i = 0;
   foreach ($plans as $plan ) {
-    exec("mkdir plans");
-    exec("wget --output-document plans/plan$i.pdf ".$plan);
+	echo "getting $plan";
+    exec("mkdir " . $pfad . "plans");
+    exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
     exec("pdftohtml -c plans/plan$i.pdf");
     array_push($plansHtml,"plans/plan$i-1.html");
     $i++;
@@ -164,17 +169,51 @@
     $timestamp = strtotime($year."W".$cw);
     // mensa
     if ( strpos($plans[$t], "UL") !== false ) {
-      $json=parsePlan(120,60,650,1500,$timestamp,$planHtml,"Mensa",$json);
+      $json=parsePlan(120,60,650,1500,$timestamp,$cw,$planHtml,"Mensa",$json);
     // bistro
     } else if ( strpos($plans[$t], "Bistro") !== false ){
-      $json=parsePlan(120,120,600,1500,$timestamp,$planHtml,"Bistro",$json);
+      $json=parsePlan(120,120,600,1500,$timestamp,$cw,$planHtml,"Bistro",$json);
     }
     $t++;
   }
 
-  $fp = fopen('food.json', 'w');
+  
+  //print_r($json);
+  
+  // Save as JSON
+  $fp = fopen($outputDir.'mensaplan.json', 'w');
   fwrite($fp, json_encode($json));
   fclose($fp);
-
-  exec("rm -rf plans");
+  
+  // Save as XML for compatibility reasons
+  $xml = new SimpleXMLElement('<mensaplan/>');
+  foreach ( $json['Mensa'] as $weekkey => $weekvalue ) {
+    // add weeks
+    $xmlweek = $xml->addChild("week");
+    $xmlweek->addAttribute('weekOfYear', $weekkey);
+    foreach ($weekvalue as $daykey => $dayvalue) {
+      // add days
+      $xmlday = $xmlweek->addChild("day");
+      $xmlday->addAttribute('date', $daykey); 
+      $xmlday->addAttribute('open', "1");      
+      // mark today day as today b/c htmlifier needs this..
+      if ($daykey==date("Y-m-d")) {
+        $xmlday->addAttribute('today', "today");    
+      }
+      // add meals
+      foreach ($dayvalue as $mealtype => $meal) {
+        $xmlmeal = $xmlday->addChild("meal");
+        $xmlmeal->addAttribute('type', $mealtype); 
+        $xmlmeal->addChild('item', $meal);  
+	  }
+	}
+  } 
+  
+  //print($xml->asXML());
+  $xml->asXML($outputDir."/mensaplan.xml");
+  
+  exec("rm -rf ".$pfad."/plans");
+  
+  echo "done\n";
+  
 ?>
