@@ -24,6 +24,7 @@ tested on ubuntu 13.04
 - Feature: export the Data in XML format for compatibility
 - Use Weeknumbers in JSON and XML
 - configurations vars for working and output dirs
-- 
+
+
 This Parser is now used productive: http://www.uni-ulm.de/mensaplan/ 
 
