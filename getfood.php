@@ -167,12 +167,15 @@
     $cw = substr($plans[$t], -7, 2);
     $year = date("Y",time());
     $timestamp = strtotime($year."W".$cw);
-    // mensa
-    if ( strpos($plans[$t], "UL") !== false ) {
-      $json=parsePlan(120,60,650,1500,$timestamp,$cw,$planHtml,"Mensa",$json);
-    // bistro
-    } else if ( strpos($plans[$t], "Bistro") !== false ){
-      $json=parsePlan(120,120,600,1500,$timestamp,$cw,$planHtml,"Bistro",$json);
+    // only use current week and coming weeks
+    if ($cw >= date("W",time())) {
+      // mensa
+      if ( strpos($plans[$t], "UL") !== false ) {
+        $json=parsePlan(120,60,650,1500,$timestamp,$cw,$planHtml,"Mensa",$json);
+      // bistro
+      } else if ( strpos($plans[$t], "Bistro") !== false ){
+        $json=parsePlan(120,120,600,1500,$timestamp,$cw,$planHtml,"Bistro",$json);
+      }
     }
     $t++;
   }
