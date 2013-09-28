@@ -15,13 +15,18 @@
   $week = date("W", $timestamp); 
 
   function whitelisted($url){
-    $whitelist = array ( 'Lecker und Fein', 'Gut und Günstig', 'Pizza', 
-                         'Pasta', 'Schneller Teller', 'Wok und Grill',
-                         'Buffet', 'Vegetarisch', 'Bio', 'Eintopfgerichte',
-                         'Aktion');
+    $whitelist = array ( 'lecker und fein', 'gut und g', 'pizza', 
+                         'pasta', 'schneller teller', 'wok und grill',
+                         'buffet', 'vegetarisch', 'bio', 'eintopfgerichte',
+                         'aktion', 'tagessuppe');
     foreach ( $whitelist as $fooditem )
       if ( strpos($url, $fooditem) !== FALSE ) return true;
     return false;
+  }
+   
+  function filterMeals($meal) {
+    $meal = str_replace(array("/ Bed."," Gast", "Stud.", "  .", "  ,", "g ="),"",$meal);
+    return str_replace(" , ",", ",$meal);
   }
    
   function getStyleAttribute($attribute, $style){
@@ -44,14 +49,16 @@
     $as = $site->find("a");
     foreach ( $as as $a ) {
       if ( strpos($a->href,"UL") !== false || 
-           strpos($a->href,"Bistro") !== false )
+           strpos($a->href,"Bistro") !== false || 
+           strpos($a->href,"West") !== false || 
+           strpos($a->href,"Prittwitzstr") !== false )
         array_push($urls,$domain.$a->href."\n");
     }
     return $urls;
   }
 
   function parsePlan ($posy, $posx, $maxposy, $maxposx,
-                      $timestamp, $week, $url, $place, $json) {
+                      $timestamp, $week, $url, $place, $json, $extraYbuffer) {
 
     // some elements are further left / right than the headline element for this
     // row, the buffer exists to account for this.
@@ -77,7 +84,7 @@
       $P->innertext=strip_tags($P->innertext);
       $P->innertext = str_replace("&#160;"," ",$P->innertext);
       $P->innertext = str_replace(
-          array("1","2","3","4","5","6","7","8","9","0",",","€","&nbsp;")
+          array("1","2","3","4","5","6","7","8","9","0"," ,","€","&nbsp;")
           ," ",$P->innertext);
       $P->innertext = trim($P->innertext);
       if ( $P->innertext != "&#160;" && 
@@ -100,13 +107,15 @@
       // columns 
       if ( $left < $posx && $top > $posy && $top < $maxposy) {    
         $tmp = $top-$buffer;
-        if ( whitelisted($element->innertext) ){
+        if ( whitelisted(trim(strtolower($element->innertext))) ){
           array_push($columns, $tmp);  
           array_push($columnsNames, $element->innertext);  
-        }
+        } else {
+			echo "$place: not found: (".$element->innertext.") <br>";
+		}
       }
     }
-	print_r($rowsNames);
+	//print_r($rowsNames);
     // initialise food
     for ( $i = 0; $i < sizeof($rows); $i++){
       for ( $j = 0; $j < sizeof($columns); $j++){  
@@ -119,7 +128,7 @@
       $top = str_replace("px","",getStyleAttribute("top",$element->style));
       $left = str_replace("px","",getStyleAttribute("left",$element->style));
       if ( $left > $posx && $top > $posy && $left < $maxposx 
-                && $top < $columns[sizeof($columns)-1] + 3*$buffer ) {
+                && $top < $columns[sizeof($columns)-1] + 3*$buffer + $extraYbuffer ) {
         $i = 0; $j = 0;
         for ( ; $i < sizeof($rows) ; $i++ ){
           if ( $left <= $rows[$i] ) {
@@ -142,8 +151,9 @@
     for ( $i = 0; $i < sizeof($rows); $i++){
       for ( $j = 0; $j < sizeof($columns); $j++){  
         if ( $food[$i][$j] != "" ){
-          $json[$place][$week][date("Y-m-d", $timestamp)][$columnsNames[$j]]=
-              str_replace("- ", "", trim($food[$i][$j]));
+			if ($columnsNames[$j] != "Salatbuffet") {
+               $json[$place][$week][date("Y-m-d", $timestamp)][$columnsNames[$j]]= filterMeals($food[$i][$j]);
+            }
         }
       }
       $timestamp = $timestamp + 24*60*60;
@@ -166,18 +176,25 @@
 
   $t = 0;
   foreach ( $plansHtml as $planHtml ) {
-    $cw = substr($plans[$t], -7, 2);
+    preg_match_all('/\d+/', $plans[$t], $matches);
+    $cw = array_pop($matches[0]);
     $year = date("Y",time());
     $timestamp = strtotime($year."W".$cw);
     // cut out old weeks
     if ($cw >= date("W",time())) {   
       // mensa
       if ( strpos($plans[$t], "UL") !== false ) {
-        $json=parsePlan(120,60,650,1500,$timestamp,$cw,$planHtml,"Mensa",$json);
+        $json=parsePlan(120,60,650,1500,$timestamp,$cw,$planHtml,"Mensa",$json, 0);
       // bistro
       } else if ( strpos($plans[$t], "Bistro") !== false ){
-        $json=parsePlan(120,120,600,1500,$timestamp,$cw,$planHtml,"Bistro",$json);
-      }
+        $json=parsePlan(120,120,600,1500,$timestamp,$cw,$planHtml,"Bistro",$json, 0);
+      } else if ( strpos($plans[$t], "West") !== false ){
+        $json=parsePlan(120,120,600,1500,$timestamp,$cw,$planHtml,"West",$json, 20);
+      } else if ( strpos($plans[$t], "Prittwitzstr") !== false ){
+        $json=parsePlan(120,120,600,1500,$timestamp,$cw,$planHtml,"Prittwitzstr",$json, 20);
+      }     
+      
+       
     }
     $t++;
   }
@@ -189,6 +206,9 @@
   $fp = fopen($outputDir.'mensaplan.json', 'w');
   fwrite($fp, json_encode($json));
   fclose($fp);
+  echo '<pre>';
+  print_r($json);
+  echo  '</pre>';
   
   // Save as XML for compatibility reasons
   $xml = new SimpleXMLElement('<mensaplan/>');
