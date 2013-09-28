@@ -57,6 +57,8 @@
     // row, the buffer exists to account for this.
     $buffer = 10;  
     
+    $days = array("montag","dienstag","mittwoch","mitt woch","donnerstag","freitag", "fre itag"); //some with spaces b/c Bistro does that (wtf)
+    
     $site = new simple_html_dom();  
     $site->load_file($url);
 
@@ -65,6 +67,7 @@
     $elements = array();
     
     $rows = array();
+    $rowsNames = array();
     $columns = array();
     $columnsNames = array();
 
@@ -88,12 +91,11 @@
     foreach ( $elements as $element ){
       $top = str_replace("px","",getStyleAttribute("top",$element->style));
       $left = str_replace("px","",getStyleAttribute("left",$element->style));
-      // rows
-      if ( $left > $posx && $top < $posy && $top > $posy-35) {
-        $tmp = $left-$buffer;
-        if ( sizeof($rows) == 0 || $rows[sizeof($rows)-1]-$tmp < 0 ){
-          array_push($rows, $tmp);  
-        }
+      // rows detection with heading
+      $tmp = $left-$buffer;
+      if (in_array(strtolower(trim($element->innertext)),$days)) {
+        array_push($rows, $tmp);  
+        array_push($rowsNames,$element->innertext);
       }
       // columns 
       if ( $left < $posx && $top > $posy && $top < $maxposy) {    
@@ -104,7 +106,7 @@
         }
       }
     }
-
+	print_r($rowsNames);
     // initialise food
     for ( $i = 0; $i < sizeof($rows); $i++){
       for ( $j = 0; $j < sizeof($columns); $j++){  
@@ -167,8 +169,8 @@
     $cw = substr($plans[$t], -7, 2);
     $year = date("Y",time());
     $timestamp = strtotime($year."W".$cw);
-    // only use current week and coming weeks
-    if ($cw >= date("W",time())) {
+    // cut out old weeks
+    if ($cw >= date("W",time())) {   
       // mensa
       if ( strpos($plans[$t], "UL") !== false ) {
         $json=parsePlan(120,60,650,1500,$timestamp,$cw,$planHtml,"Mensa",$json);
