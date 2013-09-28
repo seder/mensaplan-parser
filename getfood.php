@@ -26,7 +26,7 @@
    
   function filterMeals($meal) {
     $meal = str_replace(array("/ Bed."," Gast", "Stud.", "  .", "  ,", "g ="),"",$meal);
-    return str_replace(" , ",", ",$meal);
+    return trim(str_replace(" , ",", ",$meal));
   }
    
   function getStyleAttribute($attribute, $style){
