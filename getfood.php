@@ -42,14 +42,14 @@
   /*
    * returns index of the value, false if not present
    */
-  function isDayRegistered($date){
+  function isDayRegistered($date,$week){
     global $daysRegistered;
-    return array_search($date, $daysRegistered);
+    return array_search($date, $daysRegistered[$week]);
   }
 
-  function registerDay($date){
+  function registerDay($date,$week){
     global $daysRegistered;
-    array_push($daysRegistered,$date);
+    array_push($daysRegistered[$week],$date);
   }
 
   /*
@@ -213,6 +213,8 @@
     if (!$weekIndex){
       registerWeek($week);
       $weekIndex = isWeekRegistered($week);
+      global $daysRegistered;
+      $daysRegistered[$weekIndex] = array();
     }     
 
     $json["weeks"][$weekIndex]["weekNumber"] = (int) $week;
@@ -220,11 +222,12 @@
     for ( $i = 0; $i < sizeof($column); $i++){
 
       //get index for the day element
-      $dayIndex = isDayRegistered(date("Y-m-d", $timestamp));
+      $dayIndex = isDayRegistered(date("Y-m-d", $timestamp),$weekIndex);
       if(!$dayIndex){
-        registerDay(date("Y-m-d", $timestamp));
-        $dayIndex = isDayRegistered(date("Y-m-d", $timestamp));
+        registerDay(date("Y-m-d", $timestamp),$weekIndex);
+        $dayIndex = isDayRegistered(date("Y-m-d", $timestamp),$weekIndex);
       }
+      echo "dayindex: ".$dayIndex."\n";
 
       $json["weeks"][$weekIndex]["days"][$dayIndex]["date"]=date("Y-m-d", $timestamp);
       $k = 0;
@@ -251,7 +254,6 @@
     array_push($plansHtml,"plans/plan$i-1.html");
     $i++;
   }
-
 
   $t = 0;
   foreach ( $plansHtml as $planHtml ) {
@@ -287,7 +289,7 @@
   //echo '<pre>';
   //print_r($json);
   //echo  '</pre>';
-  
+  /*
   // Save as XML for compatibility reasons
   $xml = new SimpleXMLElement('<mensaplan/>');
   foreach ( $json['Mensa'] as $weekkey => $weekvalue ) {
@@ -313,7 +315,7 @@
   } 
   //print($xml->asXML());
   $xml->asXML($outputDir."/mensaplan.xml");
-    
+    */
   exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
