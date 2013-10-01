@@ -9,18 +9,24 @@
   
   $plans = array();
   $plansHtml = array();
-  $plans = getPlans();
+  $plans = getPlansURLs();
 
   $timestamp = time();
   $week = date("W", $timestamp); 
 
-  function whitelisted($url){
+  $json = "";
+
+  /*
+   * Returns, if a menu item is whitelisted. This needs to be done as otherwise 
+   * the fine print would be accepted as menu item.
+   */
+  function whitelisted($fooditem){
     $whitelist = array ( 'lecker und fein', 'gut und g', 'pizza', 
                          'pasta', 'schneller teller', 'wok und grill',
                          'buffet', 'vegetarisch', 'bio', 'eintopfgerichte',
                          'aktion', 'tagessuppe');
-    foreach ( $whitelist as $fooditem )
-      if ( strpos($url, $fooditem) !== FALSE ) return true;
+    foreach ( $whitelist as $wlElement )
+      if ( strpos($fooditem, $wlElement) !== FALSE ) return true;
     return false;
   }
    
@@ -28,11 +34,14 @@
     $meal = str_replace(array("/ Bed."," Gast", "Stud.", "  .", "  ,", "g ="),"",$meal);
     return trim(str_replace(" , ",", ",$meal));
   }
-   
-  function getStyleAttribute($attribute, $style){
-    $styles = explode(";",$style);
-    foreach ( $styles as $sty ){
-      $tmp = explode(":",$sty);
+
+  /*
+   * Gets $attribute of an elements tag. 
+   */
+  function getStyleAttribute($attribute, $tag){
+    $attributes = explode(";",$tag);
+    foreach ( $attributes as $attributesItem ){
+      $tmp = explode(":",$attributesItem);
       if ( $tmp[0] == $attribute ){
         return  $tmp[1];
       } 
@@ -40,7 +49,10 @@
     return $attribute . " not found";
   }
 
-  function getPlans(){
+  /*
+   * Looks for links and returns array with the addresses for all plans we use
+   */
+  function getPlansURLs(){
     $urls = array();
     $domain = "http://www.studentenwerk-ulm.de/";
     $url = $domain."/hochschulgastronomie/speiseplaene.html";
@@ -57,6 +69,18 @@
     return $urls;
   }
 
+  /*
+   * The real parsing:
+   * 
+   * ($posx,$posy) is the top left position of the table 
+   * ($maxposx,$maxposy) is the bottom right position of the table
+   * these differ from plan to plan
+   * 
+   * $timestamp, $week, $place: used for the JSON file
+   * 
+   * $json: the json conststruct, new plan gets added at the end.
+   * 
+   */
   function parsePlan ($posy, $posx, $maxposy, $maxposx,
                       $timestamp, $week, $url, $place, $json, $extraYbuffer) {
 
@@ -71,17 +95,18 @@
 
     $Ps = $site->find("DIV");
     //$Ps = $site->find("P");
+
     $elements = array();
     
+    $column = array();
+    $columnNames = array();
     $rows = array();
     $rowsNames = array();
-    $columns = array();
-    $columnsNames = array();
 
     $food = array(array());
     
     foreach ( $Ps as $P ){
-      $P->innertext=strip_tags($P->innertext);
+      $P->innertext = strip_tags($P->innertext);
       $P->innertext = str_replace("&#160;"," ",$P->innertext);
       $P->innertext = str_replace(
           array("1","2","3","4","5","6","7","8","9","0"," ,","€","&nbsp;")
@@ -98,27 +123,27 @@
     foreach ( $elements as $element ){
       $top = str_replace("px","",getStyleAttribute("top",$element->style));
       $left = str_replace("px","",getStyleAttribute("left",$element->style));
-      // rows detection with heading
+      // column detection with heading
       $tmp = $left-$buffer;
       if (in_array(strtolower(trim($element->innertext)),$days)) {
-        array_push($rows, $tmp);  
-        array_push($rowsNames,$element->innertext);
+        array_push($column, $tmp);  
+        array_push($columnNames,$element->innertext);
       }
-      // columns 
+      // rows 
       if ( $left < $posx && $top > $posy && $top < $maxposy) {    
         $tmp = $top-$buffer;
         if ( whitelisted(trim(strtolower($element->innertext))) ){
-          array_push($columns, $tmp);  
-          array_push($columnsNames, $element->innertext);  
+          array_push($rows, $tmp);  
+          array_push($rowsNames, $element->innertext);  
         } else {
-			echo "$place: not found: (".$element->innertext.") <br>";
+			echo "$place: not found: (".$element->innertext.") <br/>";
 		}
       }
     }
-	//print_r($rowsNames);
+	  //print_r($columnNames);
     // initialise food
-    for ( $i = 0; $i < sizeof($rows); $i++){
-      for ( $j = 0; $j < sizeof($columns); $j++){  
+    for ( $i = 0; $i < sizeof($column); $i++){
+      for ( $j = 0; $j < sizeof($rows); $j++){  
          $food[$i][$j]="";
       }
     }
@@ -128,15 +153,15 @@
       $top = str_replace("px","",getStyleAttribute("top",$element->style));
       $left = str_replace("px","",getStyleAttribute("left",$element->style));
       if ( $left > $posx && $top > $posy && $left < $maxposx 
-                && $top < $columns[sizeof($columns)-1] + 3*$buffer + $extraYbuffer ) {
+                && $top < $rows[sizeof($rows)-1] + 3*$buffer + $extraYbuffer ) {
         $i = 0; $j = 0;
-        for ( ; $i < sizeof($rows) ; $i++ ){
-          if ( $left <= $rows[$i] ) {
+        for ( ; $i < sizeof($column) ; $i++ ){
+          if ( $left <= $column[$i] ) {
             break;
           }
         }
-        for ( ; $j < sizeof($columns) ; $j++ ){
-          if ( $top <= $columns[$j] ) {
+        for ( ; $j < sizeof($rows) ; $j++ ){
+          if ( $top <= $rows[$j] ) {
             break;
           }
         }
@@ -148,11 +173,11 @@
     }
 
     // JSONify
-    for ( $i = 0; $i < sizeof($rows); $i++){
-      for ( $j = 0; $j < sizeof($columns); $j++){  
+    for ( $i = 0; $i < sizeof($column); $i++){
+      for ( $j = 0; $j < sizeof($rows); $j++){  
         if ( $food[$i][$j] != "" ){
-			if ($columnsNames[$j] != "Salatbuffet") {
-               $json[$place][$week][date("Y-m-d", $timestamp)][$columnsNames[$j]]= filterMeals($food[$i][$j]);
+			if ($rowsNames[$j] != "Salatbuffet") {
+               $json[$place][$week][date("Y-m-d", $timestamp)][$rowsNames[$j]]= filterMeals($food[$i][$j]);
             }
         }
       }
@@ -165,36 +190,35 @@
   $i = 0;
   foreach ($plans as $plan ) {
 	echo "getting $plan";
-    exec("mkdir " . $pfad . "plans");
+    exec("mkdir " . $pfad . "/plans");
     exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
-    exec("pdftohtml -c plans/plan$i.pdf");
+    exec("pdftohtml -c ".$pfad."/plans/plan$i.pdf");
     array_push($plansHtml,"plans/plan$i-1.html");
     $i++;
   }
 
-  $json = array();
 
   $t = 0;
   foreach ( $plansHtml as $planHtml ) {
     preg_match_all('/\d+/', $plans[$t], $matches);
-    $cw = array_pop($matches[0]);
+    $calendarWeek = array_pop($matches[0]);
     $year = date("Y",time());
     $timestamp = strtotime($year."W".$cw);
     // cut out old weeks
-    if ($cw >= date("W",time())) {   
-      // mensa
+    if ($calendarWeek >= date("W",time())) {   
+      // Mensa
       if ( strpos($plans[$t], "UL") !== false ) {
-        $json=parsePlan(120,60,650,1500,$timestamp,$cw,$planHtml,"Mensa",$json, 0);
-      // bistro
+        $json=parsePlan(120,60,650,1500,$timestamp,$calendarWeek,$planHtml,"Mensa",$json, 0);
+      // Bistro
       } else if ( strpos($plans[$t], "Bistro") !== false ){
-        $json=parsePlan(120,120,600,1500,$timestamp,$cw,$planHtml,"Bistro",$json, 0);
+        $json=parsePlan(120,120,600,1500,$timestamp,$calendarWeek,$planHtml,"Bistro",$json, 0);
+      // Cafeteria West
       } else if ( strpos($plans[$t], "West") !== false ){
-        $json=parsePlan(120,120,600,1500,$timestamp,$cw,$planHtml,"West",$json, 20);
+        $json=parsePlan(120,120,600,1500,$timestamp,$calendarWeek,$planHtml,"West",$json, 20);
+      // Prittwitzstrasse
       } else if ( strpos($plans[$t], "Prittwitzstr") !== false ){
-        $json=parsePlan(120,120,600,1500,$timestamp,$cw,$planHtml,"Prittwitzstr",$json, 20);
-      }     
-      
-       
+        $json=parsePlan(120,120,600,1500,$timestamp,$calendarWeek,$planHtml,"Prittwitzstr",$json, 20);
+      }            
     }
     $t++;
   }
