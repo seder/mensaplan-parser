@@ -20,6 +20,15 @@
   $json = array();
   $json["weeks"]=array();  
 
+  /*
+   * These functions are used for the JSON-file to ensure that every week/day we 
+   * find in the pdf sources gets a sequential index beginning with 0 while 
+   * meals at the same day/in the same week are correctly assigned.
+   */
+
+  /*
+   * returns index of the value, false if not present
+   */
   function isWeekRegistered($int){
     global $weeksRegistered;
     return array_search($int, $weeksRegistered);
@@ -30,6 +39,9 @@
     array_push($weeksRegistered,$int);
   }
 
+  /*
+   * returns index of the value, false if not present
+   */
   function isDayRegistered($date){
     global $daysRegistered;
     return array_search($date, $daysRegistered);
