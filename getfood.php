@@ -226,7 +226,7 @@
         $dayIndex = isDayRegistered(date("Y-m-d", $timestamp));
       }
 
-      $json["weeks"][$weekIndex]["days"][]["date"]=date("Y-m-d", $timestamp);
+      $json["weeks"][$weekIndex]["days"][$dayIndex]["date"]=date("Y-m-d", $timestamp);
       $k = 0;
       for ( $j = 0; $j < sizeof($rows); $j++){  
         if ( $food[$i][$j] != "" && $rowsNames[$j] != "Salatbuffet"){
