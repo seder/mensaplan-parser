@@ -11,7 +11,7 @@ dependencies:
  * wget
 
 There are different implementations of pdftohtml, depending on which one you use
-you might have to change lines 59 and 60 to this:
+you might have to change two lines to this:
 
 //$Ps = $site->find("DIV");
 
