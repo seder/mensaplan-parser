@@ -3,10 +3,10 @@
   
   // path for wget
   $pfad = "/users/student1/s_sfuchs/public_html/mensaplan-parser/";
-  
+
   // save XML and JSON to this directory
   $outputDir = "/soft/www/root/mensaplan/data/";
-  
+
   $plans = array();
   $plansHtml = array();
   $plans = getPlansURLs();
@@ -115,7 +115,7 @@
    * $timestamp, $week, $place: used for the JSON file
    * 
    * $json: the json conststruct, new plan gets added at the end.
-   * 
+   * $extraYbuffer: In Pixel: In some Plans, meals can have more rows as usual.
    */
   function parsePlan ($posy, $posx, $maxposy, $maxposx,
                       $timestamp, $week, $url, $place, $json, $extraYbuffer) {
@@ -289,33 +289,38 @@
   //echo '<pre>';
   //print_r($json);
   //echo  '</pre>';
-  /*
-  // Save as XML for compatibility reasons
+
+  // Save also as XML for compatibility reasons
   $xml = new SimpleXMLElement('<mensaplan/>');
-  foreach ( $json['Mensa'] as $weekkey => $weekvalue ) {
+  foreach ( $json['weeks'] as $weekkey => $weekvalue ) {
+    //echo $weekvalue['weekNumber']."<br>";
     // add weeks
     $xmlweek = $xml->addChild("week");
-    $xmlweek->addAttribute('weekOfYear', $weekkey);
-    foreach ($weekvalue as $daykey => $dayvalue) {
-      // add days
-      $xmlday = $xmlweek->addChild("day");
-      $xmlday->addAttribute('date', $daykey); 
-      $xmlday->addAttribute('open', "1");      
-      // mark today day as today b/c htmlifier needs this..
-      if ($daykey==date("Y-m-d")) {
-        $xmlday->addAttribute('today', "today");    
+    $xmlweek->addAttribute('weekOfYear', $weekvalue['weekNumber']);
+    foreach ( $weekvalue['days'] as $daykey => $dayvalue ) {
+      //echo $dayvalue['date']."<br>";
+      if ($dayvalue['Mensa']['open']) {
+        //echo "open<br>";
+        $xmlday = $xmlweek->addChild("day");
+        $xmlday->addAttribute('date', $dayvalue['date']);
+        $xmlday->addAttribute('open', "1");
+        // mark today day as today b/c htmlifier needs this..
+        if ($dayvalue['date']==date("Y-m-d")) {
+          $xmlday->addAttribute('today', "today");
+        }
+        foreach ( $dayvalue['Mensa']['meals'] as $mealkey => $mealvalue ) {
+          //echo $mealvalue['category'].": ".$mealvalue['meal']."<br>";
+          $xmlmeal = $xmlday->addChild("meal");
+          $xmlmeal->addAttribute('type', $mealvalue['category']);
+          $xmlmeal->addChild('item', $mealvalue['meal']);
+        }
       }
-      // add meals
-      foreach ($dayvalue as $mealtype => $meal) {
-        $xmlmeal = $xmlday->addChild("meal");
-        $xmlmeal->addAttribute('type', $mealtype); 
-        $xmlmeal->addChild('item', $meal);  
-	  }
-	}
-  } 
+    }
+  }
   //print($xml->asXML());
   $xml->asXML($outputDir."/mensaplan.xml");
-    */
+
+  // clean up
   exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
