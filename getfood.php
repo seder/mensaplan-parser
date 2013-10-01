@@ -2,10 +2,10 @@
   include("./libs/simple_html_dom.php");
   
   // path for wget
-  $pfad = "./";//"/users/student1/s_sfuchs/public_html/mensaplan-parser/";
+  $pfad = "/users/student1/s_sfuchs/public_html/mensaplan-parser/";
   
   // save XML and JSON to this directory
-  $outputDir = "./";//"/soft/www/root/mensaplan/data/";
+  $outputDir = "/soft/www/root/mensaplan/data/";
   
   $plans = array();
   $plansHtml = array();
@@ -14,7 +14,31 @@
   $timestamp = time();
   $week = date("W", $timestamp); 
 
-  $json = "";
+  $weeksRegistered = array();
+  $daysRegistered = array();
+
+  $json = array();
+  $json["weeks"]=array();  
+
+  function isWeekRegistered($int){
+    global $weeksRegistered;
+    return array_search($int, $weeksRegistered);
+  }
+
+  function registerWeek($int){
+    global $weeksRegistered;
+    array_push($weeksRegistered,$int);
+  }
+
+  function isDayRegistered($date){
+    global $daysRegistered;
+    return array_search($date, $daysRegistered);
+  }
+
+  function registerDay($date){
+    global $daysRegistered;
+    array_push($daysRegistered,$date);
+  }
 
   /*
    * Returns, if a menu item is whitelisted. This needs to be done as otherwise 
@@ -93,8 +117,8 @@
     $site = new simple_html_dom();  
     $site->load_file($url);
 
-    //$Ps = $site->find("DIV");
-    $Ps = $site->find("P");
+    $Ps = $site->find("DIV");
+    //$Ps = $site->find("P");
 
     $elements = array();
     
@@ -172,11 +196,33 @@
       }
     }
 
+    //get the index for the week element 
+    $weekIndex = isWeekRegistered($week);
+    if (!$weekIndex){
+      registerWeek($week);
+      $weekIndex = isWeekRegistered($week);
+    }     
+
+    $json["weeks"][$weekIndex]["weekNumber"] = (int) $week;
     // JSONify
     for ( $i = 0; $i < sizeof($column); $i++){
+
+      //get index for the day element
+      $dayIndex = isDayRegistered(date("Y-m-d", $timestamp));
+      if(!$dayIndex){
+        registerDay(date("Y-m-d", $timestamp));
+        $dayIndex = isDayRegistered(date("Y-m-d", $timestamp));
+      }
+
+      $json["weeks"][$weekIndex]["days"][]["date"]=date("Y-m-d", $timestamp);
+      $k = 0;
       for ( $j = 0; $j < sizeof($rows); $j++){  
         if ( $food[$i][$j] != "" && $rowsNames[$j] != "Salatbuffet"){
-             $json[$week][date("Y-m-d", $timestamp)][$place][$rowsNames[$j]]= filterMeals($food[$i][$j]);
+          $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k] = array();
+          $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["open"] = TRUE;
+          $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["category"]= $rowsNames[$j];
+          $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["meal"]= filterMeals($food[$i][$j]);
+          $k++;
         }
       }
       $timestamp = $timestamp + 24*60*60;
@@ -187,7 +233,6 @@
   // download & parse
   $i = 0;
   foreach ($plans as $plan ) {
-	echo "getting $plan";
     exec("mkdir " . $pfad . "/plans");
     exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
     exec("pdftohtml -c ".$pfad."/plans/plan$i.pdf");
@@ -221,19 +266,18 @@
     $t++;
   }
 
-  
   //print_r($json);
   
   // Save as JSON
   $fp = fopen($outputDir.'mensaplan.json', 'w');
   fwrite($fp, json_encode($json));
   fclose($fp);
-  echo '<pre>';
-  print_r($json);
-  echo  '</pre>';
+  //echo '<pre>';
+  //print_r($json);
+  //echo  '</pre>';
   
   // Save as XML for compatibility reasons
-  /*$xml = new SimpleXMLElement('<mensaplan/>');
+  $xml = new SimpleXMLElement('<mensaplan/>');
   foreach ( $json['Mensa'] as $weekkey => $weekvalue ) {
     // add weeks
     $xmlweek = $xml->addChild("week");
@@ -257,8 +301,7 @@
   } 
   //print($xml->asXML());
   $xml->asXML($outputDir."/mensaplan.xml");
-  */
-  
+    
   //exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
