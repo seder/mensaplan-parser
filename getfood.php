@@ -314,7 +314,7 @@
   //print($xml->asXML());
   $xml->asXML($outputDir."/mensaplan.xml");
     
-  //exec("rm -rf ".$pfad."/plans");
+  exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
   
