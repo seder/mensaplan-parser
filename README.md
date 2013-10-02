@@ -1,7 +1,8 @@
 mensaplan-parser
 ================
 
-parser for the uni ulm mensa- and bistroplan
+Parser for the Studentenwerk Ulm menus. You need to write a config.php file 
+first, see config_example.php for directions. 
 
 usage:
 $ php getfood.php
@@ -9,13 +10,6 @@ $ php getfood.php
 dependencies:
  * pdftohtml
  * wget
-
-There are different implementations of pdftohtml, depending on which one you use
-you might have to change two lines to this:
-
-//$Ps = $site->find("DIV");
-
-$Ps = $site->find("P");
 
 tested on ubuntu 13.04
 
@@ -25,6 +19,10 @@ tested on ubuntu 13.04
 - Use Weeknumbers in JSON and XML
 - configurations vars for working and output dirs
 
+## Changes and Notes by seder
+- Changed the JSON output format
+- JSON-File now includes information whether a cafeteria is open
+- configuration vars now in seperate file (config.php, see config_example.php for reverence)
 
 This Parser is now used productive: http://www.uni-ulm.de/mensaplan/ 
 
