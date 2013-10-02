@@ -1,11 +1,6 @@
 <?php
   include("./libs/simple_html_dom.php");
-  
-  // path for wget
-  $pfad = "/users/student1/s_sfuchs/public_html/mensaplan-parser/";
-
-  // save XML and JSON to this directory
-  $outputDir = "/soft/www/root/mensaplan/data/";
+  include("./config.php");
 
   $plans = array();
   $plansHtml = array();
@@ -67,7 +62,9 @@
   }
    
   function filterMeals($meal) {
-    $meal = str_replace(array("/ Bed."," Gast", "Stud.", "  .", "  ,", "g ="),"",$meal);
+    $meal = str_replace(array("/ Bed."," Gast", "Stud.", "  .", "  ,", "g =")," ",$meal);
+    $meal = str_replace(array("MONTAG","DIENSTAG","MITTWOCH","MITT WOCH","DONNERSTAG","FREITAG", "FRE ITAG")," ",$meal);
+    echo $meal;
     return trim(str_replace(" , ",", ",$meal));
   }
 
@@ -129,8 +126,8 @@
     $site = new simple_html_dom();  
     $site->load_file($url);
 
-    $Ps = $site->find("DIV");
-    //$Ps = $site->find("P");
+    global $elementToFind;
+    $Ps = $site->find($elementToFind);
 
     $elements = array();
     
@@ -172,8 +169,8 @@
           array_push($rows, $tmp);  
           array_push($rowsNames, $element->innertext);  
         } else {
-			echo "$place: not found: (".$element->innertext.") <br/>";
-		}
+          echo "$place: not found: (".$element->innertext.") <br/>";
+	}
       }
     }
 	  //print_r($columnNames);
@@ -227,19 +224,23 @@
         registerDay(date("Y-m-d", $timestamp),$weekIndex);
         $dayIndex = isDayRegistered(date("Y-m-d", $timestamp),$weekIndex);
       }
-      echo "dayindex: ".$dayIndex."\n";
 
       $json["weeks"][$weekIndex]["days"][$dayIndex]["date"]=date("Y-m-d", $timestamp);
       $k = 0;
+      $theresSomethingToEatToday=FALSE;
       for ( $j = 0; $j < sizeof($rows); $j++){  
         if ( $food[$i][$j] != "" && $rowsNames[$j] != "Salatbuffet"){
           $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k] = array();
-          $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["open"] = TRUE;
-          $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["category"]= $rowsNames[$j];
-          $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["meal"]= filterMeals($food[$i][$j]);
+          $meal = filterMeals($food[$i][$j]);
+          if ( $meal != "") {
+            $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["category"]= $rowsNames[$j];
+            $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["meal"]= filterMeals($food[$i][$j]);
+            $theresSomethingToEatToday=TRUE;
+          }
           $k++;
         }
       }
+      $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["open"] = $theresSomethingToEatToday;
       $timestamp = $timestamp + 24*60*60;
     }
     return $json;
