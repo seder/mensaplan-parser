@@ -111,8 +111,8 @@
    * 
    * $timestamp, $week, $place: used for the JSON file
    * 
-   * $json: the json conststruct, new plan gets added at the end.
-   * $extraYbuffer: In Pixel: In some Plans, meals can have more rows as usual.
+   * $json: the json construct, new plan gets added at the end.
+   * $extraYbuffer: In Pixel: In some plans, meals can have more rows than usual.
    */
   function parsePlan ($posy, $posx, $maxposy, $maxposx,
                       $timestamp, $week, $url, $place, $json, $extraYbuffer) {
