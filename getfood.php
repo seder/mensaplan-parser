@@ -55,7 +55,7 @@
     $whitelist = array ( 'lecker und fein', 'gut und g', 'pizza', 
                          'pasta', 'schneller teller', 'wok und grill',
                          'buffet', 'vegetarisch', 'bio', 'eintopfgerichte',
-                         'aktion', 'tagessuppe');
+                         'aktion', 'tagessuppe','suppen');
     foreach ( $whitelist as $wlElement )
       if ( strpos($fooditem, $wlElement) !== FALSE ) return true;
     return false;
@@ -64,7 +64,7 @@
   function filterMeals($meal) {
     $meal = str_replace(array("/ Bed."," Gast", "Stud.", "  .", "  ,", "g =")," ",$meal);
     $meal = str_replace(array("MONTAG","DIENSTAG","MITTWOCH","MITT WOCH","DONNERSTAG","FREITAG", "FRE ITAG")," ",$meal);
-    echo $meal;
+    $meal = str_replace(array("Montag","Dienstag","Mittwoch","Mitt woch","Donnerstag","Freitag", "Fre itag")," ",$meal);
     return trim(str_replace(" , ",", ",$meal));
   }
 
