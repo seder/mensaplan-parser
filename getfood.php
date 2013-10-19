@@ -239,7 +239,7 @@
         $bold[$i][$j] = $boldElement;
         // -------------
 
-        if ( isset($price[$j])){ 
+        if ( isset($rowPrice[$j])){ 
           $mealPrice[$i][$j]=$rowPrice[$j];
         }
 
