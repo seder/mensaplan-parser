@@ -149,8 +149,10 @@
     $columnNames = array();
     $rows = array();
     $rowsNames = array();
+    $price = array();
 
     $food = array(array());
+    $mealPrice = array(array());
     $bold = array(array());
     
     foreach ( $Ps as $P ){
@@ -177,10 +179,15 @@
           array_push($rows, $tmp);  
           array_push($rowsNames, $text);  
         } else {
-          echo "$place: not found: (".$text.") <br/>\n";
+          if ( strpos($text,"€") !==false){
+            $price[sizeof($rowsNames)-1]=$text;
+          } else {
+            echo "$place: not found: (".$text.") <br/>\n";
+          }
 	      }
       }
     }
+    print_r($price);
 
     // initialise food
     for ( $i = 0; $i < sizeof($column); $i++){
@@ -233,6 +240,10 @@
         $bold[$i][$j] = $boldElement;
         // -------------
 
+        if ( isset($price[$j])){ 
+          $mealPrice[$i][$j]=$price[$j];
+        }
+
         $food[$i][$j] .= " " . filterHTML($element->innertext);
       }
     }
@@ -266,6 +277,9 @@
           if ( filterMeals($food[$i][$j]) != "") {
             $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["category"]= $rowsNames[$j];
             $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["meal"]= filterMeals($food[$i][$j]);
+            if ( isset( $mealPrice[$i][$j])){
+              $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["price"]= $mealPrice[$i][$j];
+            }
             $theresSomethingToEatToday=TRUE;
           }
           $k++;
@@ -280,9 +294,9 @@
   // download & parse
   $i = 0;
   foreach ($plans as $plan ) {
-    exec("mkdir " . $pfad . "/plans");
-    exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
-    exec("pdftohtml -c ".$pfad."/plans/plan$i.pdf");
+    //exec("mkdir " . $pfad . "/plans");
+    //exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
+    //exec("pdftohtml -c ".$pfad."/plans/plan$i.pdf");
     array_push($plansHtml,"plans/plan$i-1.html");
     $i++;
   }
@@ -351,7 +365,7 @@
   $xml->asXML($outputDir."/mensaplan.xml");
 
   // clean up
-  exec("rm -rf ".$pfad."/plans");
+  //exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
   
