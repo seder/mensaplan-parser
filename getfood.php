@@ -294,9 +294,9 @@
   // download & parse
   $i = 0;
   foreach ($plans as $plan ) {
-    //exec("mkdir " . $pfad . "/plans");
-    //exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
-    //exec("pdftohtml -c ".$pfad."/plans/plan$i.pdf");
+    exec("mkdir " . $pfad . "/plans");
+    exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
+    exec("pdftohtml -c ".$pfad."/plans/plan$i.pdf");
     array_push($plansHtml,"plans/plan$i-1.html");
     $i++;
   }
@@ -314,7 +314,7 @@
         $json=parsePlan(120,60,650,1500,$timestamp,$calendarWeek,$planHtml,"Mensa",$json, 0);
       // Bistro
       } else if ( strpos($plans[$t], "Bistro") !== false ){
-        $json=parsePlan(120,120,600,1500,$timestamp,$calendarWeek,$planHtml,"Bistro",$json, 0);
+        $json=parsePlan(120,120,620,1500,$timestamp,$calendarWeek,$planHtml,"Bistro",$json, 0);
       // Cafeteria West
       } else if ( strpos($plans[$t], "West") !== false ){
         $json=parsePlan(120,120,600,1500,$timestamp,$calendarWeek,$planHtml,"West",$json, 20);
@@ -365,7 +365,7 @@
   $xml->asXML($outputDir."/mensaplan.xml");
 
   // clean up
-  //exec("rm -rf ".$pfad."/plans");
+  exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
   
