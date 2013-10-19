@@ -65,7 +65,17 @@
     $meal = str_replace(array("/ Bed."," Gast", "Stud.", "  .", "  ,", "g =")," ",$meal);
     $meal = str_replace(array("MONTAG","DIENSTAG","MITTWOCH","MITT WOCH","DONNERSTAG","FREITAG", "FRE ITAG")," ",$meal);
     $meal = str_replace(array("Montag","Dienstag","Mittwoch","Mitt woch","Donnerstag","Freitag", "Fre itag")," ",$meal);
+    $meal = str_replace(array("1","2","3","4","5","6","7","8","9","0"," ,","€","&nbsp;")," ",$meal);
+    // multiple spaces to one
+    $meal = preg_replace( '/\s+/', ' ', $meal );
     return trim(str_replace(" , ",", ",$meal));
+  }
+
+  function filterHTML($str){
+      $str = strip_tags($str);
+      $str = str_replace("&#160;"," ",$str);         
+      $str = trim($str);
+      return $str;
   }
 
   /*
@@ -105,8 +115,8 @@
   /*
    * The real parsing:
    * 
-   * ($posx,$posy) is the top left position of the table 
-   * ($maxposx,$maxposy) is the bottom right position of the table
+   * ($posx,$posy) is the top left position of the table in pixels
+   * ($maxposx,$maxposy) is the bottom right position of the table in pixels
    * these differ from plan to plan
    * 
    * $timestamp, $week, $place: used for the JSON file
@@ -117,11 +127,15 @@
   function parsePlan ($posy, $posx, $maxposy, $maxposx,
                       $timestamp, $week, $url, $place, $json, $extraYbuffer) {
 
-    // some elements are further left / right than the headline element for this
-    // row, the buffer exists to account for this.
+    /* some elements are further left / right than the headline element for this
+     * column or higher / lower than the headline element for this row. The 
+     * buffer exists to account for this.
+     */
     $buffer = 10;  
     
-    $days = array("montag","dienstag","mittwoch","mitt woch","donnerstag","freitag", "fre itag"); //some with spaces b/c Bistro does that (wtf)
+    //some with spaces b/c Bistro does that (wtf)
+    $days = array("montag","dienstag","mittwoch","mitt woch",
+                  "donnerstag","freitag", "fre itag"); 
     
     $site = new simple_html_dom();  
     $site->load_file($url);
@@ -137,17 +151,10 @@
     $rowsNames = array();
 
     $food = array(array());
+    $bold = array(array());
     
     foreach ( $Ps as $P ){
-      $P->innertext = strip_tags($P->innertext);
-      $P->innertext = str_replace("&#160;"," ",$P->innertext);
-      $P->innertext = str_replace(
-          array("1","2","3","4","5","6","7","8","9","0"," ,","€","&nbsp;")
-          ," ",$P->innertext);
-      $P->innertext = trim($P->innertext);
-      if ( $P->innertext != "&#160;" && 
-           $P->innertext != "<b>&#160;</b>" &&
-           $P->innertext != "" ){ 
+      if ( filterHTML($P->innertext) != "" ){   
         array_push($elements,$P);
       }
     }
@@ -156,28 +163,30 @@
     foreach ( $elements as $element ){
       $top = str_replace("px","",getStyleAttribute("top",$element->style));
       $left = str_replace("px","",getStyleAttribute("left",$element->style));
+      $text = filterHTML($element->innertext);
       // column detection with heading
       $tmp = $left-$buffer;
-      if (in_array(strtolower(trim($element->innertext)),$days)) {
+      if (in_array(strtolower(trim($text)),$days)) {
         array_push($column, $tmp);  
-        array_push($columnNames,$element->innertext);
+        array_push($columnNames,$text);
       }
       // rows 
       if ( $left < $posx && $top > $posy && $top < $maxposy) {    
         $tmp = $top-$buffer;
-        if ( whitelisted(trim(strtolower($element->innertext))) ){
+        if ( whitelisted(trim(strtolower($text))) ){
           array_push($rows, $tmp);  
-          array_push($rowsNames, $element->innertext);  
+          array_push($rowsNames, $text);  
         } else {
-          echo "$place: not found: (".$element->innertext.") <br/>";
-	}
+          echo "$place: not found: (".$text.") <br/>\n";
+	      }
       }
     }
-	  //print_r($columnNames);
+
     // initialise food
     for ( $i = 0; $i < sizeof($column); $i++){
       for ( $j = 0; $j < sizeof($rows); $j++){  
          $food[$i][$j]="";
+         $bold[$i][$j]=false;
       }
     }
 
@@ -185,6 +194,7 @@
     foreach ( $elements as $element ){
       $top = str_replace("px","",getStyleAttribute("top",$element->style));
       $left = str_replace("px","",getStyleAttribute("left",$element->style));
+
       if ( $left > $posx && $top > $posy && $left < $maxposx 
                 && $top < $rows[sizeof($rows)-1] + 3*$buffer + $extraYbuffer ) {
         $i = 0; $j = 0;
@@ -201,7 +211,29 @@
         $i--; $j--;
         if ( $i < 0 ) $i = 0;
         if ( $j < 0 ) $j = 0;
-        $food[$i][$j] .= " " .$element->innertext;
+
+        /* -------------
+         * insert " – " if text changes from bold to normal. 
+         * by that, the ingredients list and the name of a pizza are seperated
+         * (Bistro)
+         */
+        if ( strpos( strtolower($element->innertext), "<b>") !== false &&
+             //there are bold spaces everywhere -.-
+             strpos( strtolower(str_replace("&#160;","",$element->innertext)), "<b></b>") === false) {
+          $boldElement = true;
+        } else {
+          $boldElement = false;
+        }
+        /* trim(filterMeals($food[$i][$j])) needed b/c the day that gets 
+         * filtered out later is bold
+         */
+        if ($bold[$i][$j] && !$boldElement && trim(filterMeals($food[$i][$j])) != ""){
+          $food[$i][$j] .= " – "; 
+        }
+        $bold[$i][$j] = $boldElement;
+        // -------------
+
+        $food[$i][$j] .= " " . filterHTML($element->innertext);
       }
     }
 
@@ -231,8 +263,7 @@
       for ( $j = 0; $j < sizeof($rows); $j++){  
         if ( $food[$i][$j] != "" && $rowsNames[$j] != "Salatbuffet"){
           $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k] = array();
-          $meal = filterMeals($food[$i][$j]);
-          if ( $meal != "") {
+          if ( filterMeals($food[$i][$j]) != "") {
             $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["category"]= $rowsNames[$j];
             $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["meal"]= filterMeals($food[$i][$j]);
             $theresSomethingToEatToday=TRUE;
@@ -280,8 +311,6 @@
     }
     $t++;
   }
-
-  //print_r($json);
   
   // Save as JSON
   $fp = fopen($outputDir.'mensaplan.json', 'w');
