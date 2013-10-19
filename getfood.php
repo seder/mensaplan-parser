@@ -149,7 +149,7 @@
     $columnNames = array();
     $rows = array();
     $rowsNames = array();
-    $price = array();
+    $rowPrice = array();
 
     $food = array(array());
     $mealPrice = array(array());
@@ -180,14 +180,13 @@
           array_push($rowsNames, $text);  
         } else {
           if ( strpos($text,"€") !==false){
-            $price[sizeof($rowsNames)-1]=$text;
+            $rowPrice[sizeof($rowsNames)-1]=$text;
           } else {
             echo "$place: not found: (".$text.") <br/>\n";
           }
 	      }
       }
     }
-    print_r($price);
 
     // initialise food
     for ( $i = 0; $i < sizeof($column); $i++){
@@ -241,7 +240,7 @@
         // -------------
 
         if ( isset($price[$j])){ 
-          $mealPrice[$i][$j]=$price[$j];
+          $mealPrice[$i][$j]=$rowPrice[$j];
         }
 
         $food[$i][$j] .= " " . filterHTML($element->innertext);
