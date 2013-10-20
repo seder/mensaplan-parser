@@ -23,6 +23,7 @@ tested on ubuntu 13.04
 - Changed the JSON output format
 - JSON-File now includes information whether a cafeteria is open
 - configuration vars now in seperate file (config.php, see config_example.php for reverence)
+- addded prices for all plans that provide this information
 
 This Parser is now used productive: http://www.uni-ulm.de/mensaplan/ 
 
