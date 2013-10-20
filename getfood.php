@@ -336,10 +336,10 @@
         $json=parsePlan(120,120,620,1500,$timestamp,$calendarWeek,$planHtml,"Bistro",$json, 0);
       // Cafeteria West
       } else if ( strpos($plans[$t], "West") !== false ){
-        $json=parsePlan(120,120,700,1500,$timestamp,$calendarWeek,$planHtml,"West",$json, 50);
+        $json=parsePlan(120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"West",$json, 70);
       // Prittwitzstrasse
       } else if ( strpos($plans[$t], "Prittwitzstr") !== false ){
-        $json=parsePlan(120,120,700,1500,$timestamp,$calendarWeek,$planHtml,"Prittwitzstr",$json, 50);
+        $json=parsePlan(120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"Prittwitzstr",$json, 70);
       }            
     }
     $t++;
