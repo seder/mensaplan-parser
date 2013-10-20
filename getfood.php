@@ -78,6 +78,13 @@
       return $str;
   }
 
+  function filterPrice($str){
+      $str = str_replace("/"," ",$str);  
+      $str = preg_replace( '/\s+/', ' ', $str );       
+      $str = trim($str);
+      return $str;
+  }
+
   /*
    * Gets $attribute of an elements tag. 
    */
@@ -184,7 +191,7 @@
           } else {
             echo "$place: not found: (".$text.") <br/>\n";
           }
-	      }
+        }
       }
     }
 
@@ -193,6 +200,7 @@
       for ( $j = 0; $j < sizeof($rows); $j++){  
          $food[$i][$j]="";
          $bold[$i][$j]=false;
+         $mealPrice[$i][$j]="";
       }
     }
 
@@ -239,11 +247,23 @@
         $bold[$i][$j] = $boldElement;
         // -------------
 
+        /*
+         * Prices are either below the meal name or below the meal category
+         * if it's below the category, it's already saved as $rowPrice. 
+         * Otherwise, we find it here. Prices are identified on the basis of the
+         * existence of a €. Luckily, prices are always in an extra line. Let's
+         * hope it stays that way.
+         */
+        if ( strpos(filterHTML($element->innertext),"€") !== false ){
+          $mealPrice[$i][$j].=" ".filterHTML($element->innertext);
+        }
+
         if ( isset($rowPrice[$j])){ 
           $mealPrice[$i][$j]=$rowPrice[$j];
         }
 
         $food[$i][$j] .= " " . filterHTML($element->innertext);
+
       }
     }
 
@@ -276,8 +296,8 @@
           if ( filterMeals($food[$i][$j]) != "") {
             $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["category"]= $rowsNames[$j];
             $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["meal"]= filterMeals($food[$i][$j]);
-            if ( isset( $mealPrice[$i][$j])){
-              $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["price"]= $mealPrice[$i][$j];
+            if ( $mealPrice[$i][$j] != "" ){
+              $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["price"]= filterPrice($mealPrice[$i][$j]);
             }
             $theresSomethingToEatToday=TRUE;
           }
@@ -316,7 +336,7 @@
         $json=parsePlan(120,120,620,1500,$timestamp,$calendarWeek,$planHtml,"Bistro",$json, 0);
       // Cafeteria West
       } else if ( strpos($plans[$t], "West") !== false ){
-        $json=parsePlan(120,120,600,1500,$timestamp,$calendarWeek,$planHtml,"West",$json, 20);
+        $json=parsePlan(120,120,700,1500,$timestamp,$calendarWeek,$planHtml,"West",$json, 50);
       // Prittwitzstrasse
       } else if ( strpos($plans[$t], "Prittwitzstr") !== false ){
         $json=parsePlan(120,120,600,1500,$timestamp,$calendarWeek,$planHtml,"Prittwitzstr",$json, 20);
