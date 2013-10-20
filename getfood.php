@@ -339,7 +339,7 @@
         $json=parsePlan(120,120,700,1500,$timestamp,$calendarWeek,$planHtml,"West",$json, 50);
       // Prittwitzstrasse
       } else if ( strpos($plans[$t], "Prittwitzstr") !== false ){
-        $json=parsePlan(120,120,600,1500,$timestamp,$calendarWeek,$planHtml,"Prittwitzstr",$json, 20);
+        $json=parsePlan(120,120,700,1500,$timestamp,$calendarWeek,$planHtml,"Prittwitzstr",$json, 50);
       }            
     }
     $t++;
