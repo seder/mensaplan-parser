@@ -312,7 +312,9 @@
        * by that, the ingredients list and the name of a pizza are seperated
        * (Bistro)
        */
-      if ( strpos( strtolower($element->innertext), "<b>") !== false) {
+      if ( strpos( strtolower($element->innertext), "<b>") !== false &&
+           //there are bold spaces everywhere -.-
+           strpos( strtolower(str_replace("&#160;","",$element->innertext)), "<b></b>") === false) {
         $boldElement = true;
       } else {
         $boldElement = false;
