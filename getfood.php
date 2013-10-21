@@ -353,9 +353,9 @@
   // download plans and reformat them to html
   $i = 0;
   foreach ($plans as $plan ) {
-    //exec("mkdir " . $pfad . "/plans");
-    //exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
-    //exec("pdftohtml -c ".$pfad."/plans/plan$i.pdf");
+    exec("mkdir " . $pfad . "/plans");
+    exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
+    exec("pdftohtml -c ".$pfad."/plans/plan$i.pdf");
     array_push($plansHtml,"plans/plan$i-1.html");
     $i++;
   }
@@ -425,7 +425,7 @@
   $xml->asXML($outputDir."/mensaplan.xml");
 
   // clean up
-  //exec("rm -rf ".$pfad."/plans");
+  exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
   
