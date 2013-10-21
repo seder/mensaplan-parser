@@ -4,7 +4,6 @@
 
   $plans = array();
   $plansHtml = array();
-  $plans = getPlansURLs();
 
   $timestamp = time();
   $week = date("W", $timestamp); 
@@ -120,154 +119,51 @@
   }
 
   /*
-   * The real parsing:
-   * 
-   * ($posx,$posy) is the top left position of the table in pixels
-   * ($maxposx,$maxposy) is the bottom right position of the table in pixels
-   * these differ from plan to plan
-   * 
-   * $timestamp, $week, $place: used for the JSON file
-   * 
-   * $json: the json construct, new plan gets added at the end.
-   * $extraYbuffer: In Pixel: In some plans, meals can have more rows than usual.
+   * Returns the position of an element in the table or false if it's outside 
+   * the table.
    */
-  function parsePlan ($posy, $posx, $maxposy, $maxposx,
-                      $timestamp, $week, $url, $place, $json, $extraYbuffer) {
+  function getPositionOfElement($element, $posx, $posy, $maxposx, 
+                                $buffer, $rows, $columns, $extraYbuffer){
+    $top = str_replace("px","",getStyleAttribute("top",$element->style));
+    $left = str_replace("px","",getStyleAttribute("left",$element->style));
 
-    /* some elements are further left / right than the headline element for this
-     * column or higher / lower than the headline element for this row. The 
-     * buffer exists to account for this.
-     */
-    $buffer = 10;  
-    
-    //some with spaces b/c Bistro does that (wtf)
-    $days = array("montag","dienstag","mittwoch","mitt woch",
-                  "donnerstag","freitag", "fre itag"); 
-    
-    $site = new simple_html_dom();  
-    $site->load_file($url);
+    // if the element is within these borders, it's in the table
+    if ( $left > $posx && $top > $posy && $left < $maxposx 
+              && $top < $rows[sizeof($rows)-1] + 3*$buffer + $extraYbuffer ) {
+      
+      $position = array();
+      $position['x'] = 0;
+      $position['y'] = 0;
 
-    global $elementToFind;
-    $Ps = $site->find($elementToFind);
-
-    $elements = array();
-    
-    $column = array();
-    $columnNames = array();
-    $rows = array();
-    $rowsNames = array();
-    $rowPrice = array();
-
-    $food = array(array());
-    $mealPrice = array(array());
-    $bold = array(array());
-    
-    foreach ( $Ps as $P ){
-      if ( filterHTML($P->innertext) != "" ){   
-        array_push($elements,$P);
+      // get the table position of the element
+      for ( ; $position['x'] < sizeof($columns) ; $position['x']++ ){
+        if ( $left <= $columns[$position['x']] ) {
+          break;
+        }
       }
+      for ( ; $position['y'] < sizeof($rows) ; $position['y']++ ){
+        if ( $top <= $rows[$position['y']] ) {
+          break;
+        }
+      }
+      $position['x']--; $position['y']--;
+      if ( $position['x'] < 0 ) $position['x'] = 0;
+      if ( $position['y'] < 0 ) $position['y'] = 0;
+      
+      return $position;
+    } else {
+      return false;
     }
+  }
 
-    // get positions of rows and columns
-    foreach ( $elements as $element ){
-      $top = str_replace("px","",getStyleAttribute("top",$element->style));
-      $left = str_replace("px","",getStyleAttribute("left",$element->style));
-      $text = filterHTML($element->innertext);
-      // column detection with heading
-      $tmp = $left-$buffer;
-      if (in_array(strtolower(trim($text)),$days)) {
-        array_push($column, $tmp);  
-        array_push($columnNames,$text);
-      }
-      // rows 
-      if ( $left < $posx && $top > $posy && $top < $maxposy) {    
-        $tmp = $top-$buffer;
-        if ( whitelisted(trim(strtolower($text))) ){
-          array_push($rows, $tmp);  
-          array_push($rowsNames, $text);  
-        } else {
-          if ( strpos($text,"€") !==false){
-            $rowPrice[sizeof($rowsNames)-1]=$text;
-          } else {
-            echo "$place: not found: (".$text.") <br/>\n";
-          }
-        }
-      }
-    }
-
-    // initialise food
-    for ( $i = 0; $i < sizeof($column); $i++){
-      for ( $j = 0; $j < sizeof($rows); $j++){  
-         $food[$i][$j]="";
-         $bold[$i][$j]=false;
-         $mealPrice[$i][$j]="";
-      }
-    }
-
-    // get positions of elements and sort them to the right position
-    foreach ( $elements as $element ){
-      $top = str_replace("px","",getStyleAttribute("top",$element->style));
-      $left = str_replace("px","",getStyleAttribute("left",$element->style));
-
-      if ( $left > $posx && $top > $posy && $left < $maxposx 
-                && $top < $rows[sizeof($rows)-1] + 3*$buffer + $extraYbuffer ) {
-        $i = 0; $j = 0;
-        for ( ; $i < sizeof($column) ; $i++ ){
-          if ( $left <= $column[$i] ) {
-            break;
-          }
-        }
-        for ( ; $j < sizeof($rows) ; $j++ ){
-          if ( $top <= $rows[$j] ) {
-            break;
-          }
-        }
-        $i--; $j--;
-        if ( $i < 0 ) $i = 0;
-        if ( $j < 0 ) $j = 0;
-
-        /* -------------
-         * insert " – " if text changes from bold to normal. 
-         * by that, the ingredients list and the name of a pizza are seperated
-         * (Bistro)
-         */
-        if ( strpos( strtolower($element->innertext), "<b>") !== false &&
-             //there are bold spaces everywhere -.-
-             strpos( strtolower(str_replace("&#160;","",$element->innertext)), "<b></b>") === false) {
-          $boldElement = true;
-        } else {
-          $boldElement = false;
-        }
-        /* trim(filterMeals($food[$i][$j])) needed b/c the day that gets 
-         * filtered out later is bold
-         */
-        if ($bold[$i][$j] && !$boldElement && trim(filterMeals($food[$i][$j])) != ""){
-          $food[$i][$j] .= " – "; 
-        }
-        $bold[$i][$j] = $boldElement;
-        // -------------
-
-        /*
-         * Prices are either below the meal name or below the meal category
-         * if it's below the category, it's already saved as $rowPrice. 
-         * Otherwise, we find it here. Prices are identified on the basis of the
-         * existence of a €. Luckily, prices are always in an extra line. Let's
-         * hope it stays that way.
-         */
-        if ( strpos(filterHTML($element->innertext),"€") !== false ){
-          $mealPrice[$i][$j].=" ".filterHTML($element->innertext);
-        }
-
-        if ( isset($rowPrice[$j])){ 
-          $mealPrice[$i][$j]=$rowPrice[$j];
-        }
-
-        $food[$i][$j] .= " " . filterHTML($element->innertext);
-
-      }
-    }
-
-    //get the index for the week element 
+  /*
+   * Build the json array we need. If something is changed here, the XML output
+   * has to be changed to.
+   */
+  function jsonify($json, $rowsNames ,$food, $mealPrice, 
+                   $columns, $rows,$place,
+                   $week, $timestamp){
+   //get the index for the week element 
     $weekIndex = isWeekRegistered($week);
     if (!$weekIndex){
       registerWeek($week);
@@ -277,8 +173,8 @@
     }     
 
     $json["weeks"][$weekIndex]["weekNumber"] = (int) $week;
-    // JSONify
-    for ( $i = 0; $i < sizeof($column); $i++){
+    
+    for ( $i = 0; $i < $columns; $i++){
 
       //get index for the day element
       $dayIndex = isDayRegistered(date("Y-m-d", $timestamp),$weekIndex);
@@ -290,7 +186,7 @@
       $json["weeks"][$weekIndex]["days"][$dayIndex]["date"]=date("Y-m-d", $timestamp);
       $k = 0;
       $theresSomethingToEatToday=FALSE;
-      for ( $j = 0; $j < sizeof($rows); $j++){  
+      for ( $j = 0; $j < $rows; $j++){  
         if ( $food[$i][$j] != "" && $rowsNames[$j] != "Salatbuffet"){
           $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k] = array();
           if ( filterMeals($food[$i][$j]) != "") {
@@ -310,16 +206,161 @@
     return $json;
   }
 
-  // download & parse
+  /*
+   * The real parsing:
+   * 
+   * ($posx,$posy) is the top left position of the table in pixels
+   * ($maxposx,$maxposy) is the bottom right position of the table in pixels
+   * these differ from plan to plan
+   * 
+   * $timestamp, $week, $place: used for the JSON file
+   * 
+   * $json: the json construct, new plan gets added at the end.
+   * $extraYbuffer: In Pixel: In some plans, meals can have more rows than usual.
+   */
+  function parsePlan ($posy, $posx, $maxposy, $maxposx,
+                      $timestamp, $week, $url, $place, $json, $extraYbuffer) {
+
+    /* some elements are further left / right than the headline element for this
+     * column or higher / lower than the headline element for this row. The 
+     * buffer exists to account for this.
+     */
+    $buffer = 10;  
+
+    //some with spaces b/c Bistro does that (wtf)
+    $days = array("montag","dienstag","mittwoch","mitt woch",
+                  "donnerstag","freitag", "fre itag"); 
+
+    $elements = array();
+    
+    $columns = array();
+    $rows = array();
+    $rowsNames = array();
+    $rowPrice = array();
+
+    $food = array(array());
+    $mealPrice = array(array());
+    $bold = array(array());
+    
+    // load html file and build dom
+    $site = new simple_html_dom();  
+    $site->load_file($url);
+
+    /* get the elements that contain the needed data and ignore the ones that 
+     * are empty
+     */
+    global $elementToFind;
+    $Ps = $site->find($elementToFind);
+    
+    foreach ( $Ps as $P ){
+      if ( filterHTML($P->innertext) != "" ){   
+        array_push($elements,$P);
+      }
+    }
+
+    // get positions of rows and columns – building table
+    foreach ( $elements as $element ){
+      $top = str_replace("px","",getStyleAttribute("top",$element->style));
+      $left = str_replace("px","",getStyleAttribute("left",$element->style));
+      $text = filterHTML($element->innertext);
+      // column detection by day
+      $tmp = $left-$buffer;
+      if (in_array(strtolower(trim($text)),$days)) {
+        array_push($columns, $tmp);  
+      }
+      // row detection by whitelisted meal categories 
+      if ( $left < $posx && $top > $posy && $top < $maxposy) {    
+        $tmp = $top-$buffer;
+        if ( whitelisted(trim(strtolower($text))) ){
+          array_push($rows, $tmp);  
+          array_push($rowsNames, $text);  
+        } else {
+          if ( strpos($text,"€") !==false){
+            // there's a price in the title of the row. 
+            $rowPrice[sizeof($rowsNames)-1]=$text;
+          } else {
+            echo "$place: not found: (".$text.") <br/>\n";
+          }
+        }
+      }
+    }
+
+    // initialise arrays
+    for ( $i = 0; $i < sizeof($columns); $i++){
+      for ( $j = 0; $j < sizeof($rows); $j++){  
+         $food[$i][$j]="";
+         $bold[$i][$j]=false;
+         $mealPrice[$i][$j]="";
+      }
+    }
+
+    // get positions of elements and sort them to the right position
+    foreach ( $elements as $element ){
+
+      $position = getPositionOfElement($element, $posx, $posy, $maxposx, 
+                                $buffer, $rows, $columns, $extraYbuffer);
+
+      if ( $position === false ) {
+        continue;
+      } else {
+        $x = $position['x'];
+        $y = $position['y'];
+      }
+
+      /*
+       * insert " – " if text changes from bold to normal.
+       * by that, the ingredients list and the name of a pizza are seperated
+       * (Bistro)
+       */
+      if ( strpos( strtolower($element->innertext), "<b>") !== false) {
+        $boldElement = true;
+      } else {
+        $boldElement = false;
+      }
+      /* trim(filterMeals($food[$i][$j])) needed b/c the day that gets 
+       * filtered out later is bold
+       */
+      if ($bold[$x][$y] && !$boldElement && trim(filterMeals($food[$x][$y])) != ""){
+        $food[$x][$y] .= " – "; 
+      }
+      $bold[$x][$y] = $boldElement;
+
+      /*
+       * Prices are either below the meal name or below the meal category
+       * if it's below the category, it's already saved as $rowPrice. 
+       * Otherwise, we find it here. Prices are identified on the basis of the
+       * existence of a €. Luckily, prices are always in an extra line. Let's
+       * hope it stays that way.
+       */
+      if ( isset($rowPrice[$y]) ){ 
+        $mealPrice[$x][$y]=$rowPrice[$y];
+      }
+      if ( strpos(filterHTML($element->innertext),"€") !== false ){
+        $mealPrice[$x][$y].=" ".filterHTML($element->innertext);
+      } else {// if it's not a price, append it to the meal
+        $food[$x][$y] .= " " . filterHTML($element->innertext);
+      }      
+    }
+
+    return jsonify($json, $rowsNames ,$food, $mealPrice, 
+                   sizeof($columns),sizeof($rows),$place,
+                   $week, $timestamp);
+  }
+
+  // get the URLs of the plans we want to parse
+  $plans = getPlansURLs();
+
+  // download plans and reformat them to html
   $i = 0;
   foreach ($plans as $plan ) {
-    exec("mkdir " . $pfad . "/plans");
-    exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
-    exec("pdftohtml -c ".$pfad."/plans/plan$i.pdf");
+    //exec("mkdir " . $pfad . "/plans");
+    //exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
+    //exec("pdftohtml -c ".$pfad."/plans/plan$i.pdf");
     array_push($plansHtml,"plans/plan$i-1.html");
     $i++;
   }
 
+  // parse plans
   $t = 0;
   foreach ( $plansHtml as $planHtml ) {
     preg_match_all('/\d+/', $plans[$t], $matches);
@@ -384,7 +425,7 @@
   $xml->asXML($outputDir."/mensaplan.xml");
 
   // clean up
-  exec("rm -rf ".$pfad."/plans");
+  //exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
   
