@@ -218,8 +218,8 @@
    * $json: the json construct, new plan gets added at the end.
    * $extraYbuffer: In Pixel: In some plans, meals can have more rows than usual.
    */
-  function parsePlan ($posy, $posx, $maxposy, $maxposx,
-                      $timestamp, $week, $url, $place, $json, $extraYbuffer) {
+  function parsePlan ($json, $posy, $posx, $maxposy, $maxposx,
+                      $timestamp, $week, $url, $place, $extraYbuffer) {
 
     /* some elements are further left / right than the headline element for this
      * column or higher / lower than the headline element for this row. The 
@@ -371,16 +371,16 @@
     if ($calendarWeek >= date("W",time())) {   
       // Mensa
       if ( strpos($plans[$t], "UL") !== false ) {
-        $json=parsePlan(120,60,650,1500,$timestamp,$calendarWeek,$planHtml,"Mensa",$json, 0);
+        $json=parsePlan($json,120,60,650,1500,$timestamp,$calendarWeek,$planHtml,"Mensa", 0);
       // Bistro
       } else if ( strpos($plans[$t], "Bistro") !== false ){
-        $json=parsePlan(120,120,620,1500,$timestamp,$calendarWeek,$planHtml,"Bistro",$json, 0);
+        $json=parsePlan($json,120,120,620,1500,$timestamp,$calendarWeek,$planHtml,"Bistro", 0);
       // Cafeteria West
       } else if ( strpos($plans[$t], "West") !== false ){
-        $json=parsePlan(120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"West",$json, 75);
+        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"West",75);
       // Prittwitzstrasse
       } else if ( strpos($plans[$t], "Prittwitzstr") !== false ){
-        $json=parsePlan(120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"Prittwitzstr",$json, 70);
+        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"Prittwitzstr",70);
       }            
     }
     $t++;
