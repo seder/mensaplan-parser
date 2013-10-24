@@ -368,7 +368,7 @@
         $json=parsePlan($json,120,60,650,1500,$timestamp,$calendarWeek,$planHtml,"Mensa", 0);
       // Bistro
       } else if ( strpos($plans[$t], "Bistro") !== false ){
-        $json=parsePlan($json,120,120,620,1500,$timestamp,$calendarWeek,$planHtml,"Bistro", 0);
+        $json=parsePlan($json,120,120,630,1500,$timestamp,$calendarWeek,$planHtml,"Bistro", 0);
       // Cafeteria West
       } else if ( strpos($plans[$t], "West") !== false ){
         $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"West",40);
