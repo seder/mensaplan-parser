@@ -71,8 +71,7 @@
   }
 
   function filterHTML($str){
-      $str = strip_tags($str);
-      $str = str_replace("&#160;"," ",$str);         
+      $str = str_replace(array("&#160;","&nbsp;")," ",$str);         
       $str = trim($str);
       return $str;
   }
@@ -84,18 +83,17 @@
       return $str;
   }
 
+  function getTextFromNode($xml){
+      $tmp = $xml->xpath(".//text()");
+      return (string) $tmp[0];
+  }
+
   /*
    * Gets $attribute of an elements tag. 
    */
   function getStyleAttribute($attribute, $tag){
-    $attributes = explode(";",$tag);
-    foreach ( $attributes as $attributesItem ){
-      $tmp = explode(":",$attributesItem);
-      if ( $tmp[0] == $attribute ){
-        return  $tmp[1];
-      } 
-    }
-    return $attribute . " not found";
+    $tmp = $tag->xpath("./@".$attribute);
+    return (string) $tmp[0];
   }
 
   /*
@@ -124,8 +122,8 @@
    */
   function getPositionOfElement($element, $posx, $posy, $maxposx, 
                                 $buffer, $rows, $columns, $extraYbuffer){
-    $top = str_replace("px","",getStyleAttribute("top",$element->style));
-    $left = str_replace("px","",getStyleAttribute("left",$element->style));
+    $top = getStyleAttribute("top",$element);
+    $left = getStyleAttribute("left",$element);
 
     // if the element is within these borders, it's in the table
     if ( $left > $posx && $top > $posy && $left < $maxposx 
@@ -163,7 +161,7 @@
   function jsonify($json, $rowsNames ,$food, $mealPrice, 
                    $columns, $rows,$place,
                    $week, $timestamp){
-   //get the index for the week element 
+    //get the index for the week element 
     $weekIndex = isWeekRegistered($week);
     if (!$weekIndex){
       registerWeek($week);
@@ -187,16 +185,14 @@
       $k = 0;
       $theresSomethingToEatToday=FALSE;
       for ( $j = 0; $j < $rows; $j++){  
-        if ( $food[$i][$j] != "" && $rowsNames[$j] != "Salatbuffet"){
+        if ( filterMeals($food[$i][$j]) != "" && $rowsNames[$j] != "Salatbuffet"){
           $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k] = array();
-          if ( filterMeals($food[$i][$j]) != "") {
-            $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["category"]= $rowsNames[$j];
-            $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["meal"]= filterMeals($food[$i][$j]);
-            if ( $mealPrice[$i][$j] != "" ){
-              $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["price"]= filterPrice($mealPrice[$i][$j]);
-            }
-            $theresSomethingToEatToday=TRUE;
+          $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["category"]= $rowsNames[$j];
+          $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["meal"]= filterMeals($food[$i][$j]);
+          if ( $mealPrice[$i][$j] != "" ){
+            $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["price"]= filterPrice($mealPrice[$i][$j]);
           }
+          $theresSomethingToEatToday=TRUE;
           $k++;
         }
       }
@@ -242,27 +238,23 @@
     $mealPrice = array(array());
     $bold = array(array());
     
-    // load html file and build dom
-    $site = new simple_html_dom();  
-    $site->load_file($url);
+    // load xml file
+    $site = simplexml_load_file($url);  
 
     /* get the elements that contain the needed data and ignore the ones that 
      * are empty
      */
-    global $elementToFind;
-    $Ps = $site->find($elementToFind);
+    $elements = $site->xpath("//text");
     
-    foreach ( $Ps as $P ){
-      if ( filterHTML($P->innertext) != "" ){   
-        array_push($elements,$P);
-      }
-    }
-
     // get positions of rows and columns – building table
     foreach ( $elements as $element ){
-      $top = str_replace("px","",getStyleAttribute("top",$element->style));
-      $left = str_replace("px","",getStyleAttribute("left",$element->style));
-      $text = filterHTML($element->innertext);
+      $top = getStyleAttribute("top",$element);
+      $left = getStyleAttribute("left",$element);
+
+      $text = filterHTML(getTextFromNode($element));
+      
+      if ( $text == "" ) continue;
+
       // column detection by day
       $tmp = $left-$buffer;
       if (in_array(strtolower(trim($text)),$days)) {
@@ -271,7 +263,7 @@
       // row detection by whitelisted meal categories 
       if ( $left < $posx && $top > $posy && $top < $maxposy) {    
         $tmp = $top-$buffer;
-        if ( whitelisted(trim(strtolower($text))) ){
+        if ( whitelisted(strtolower(filterHTML($text))) ){
           array_push($rows, $tmp);  
           array_push($rowsNames, $text);  
         } else {
@@ -296,7 +288,7 @@
 
     // get positions of elements and sort them to the right position
     foreach ( $elements as $element ){
-
+      
       $position = getPositionOfElement($element, $posx, $posy, $maxposx, 
                                 $buffer, $rows, $columns, $extraYbuffer);
 
@@ -312,17 +304,17 @@
        * by that, the ingredients list and the name of a pizza are seperated
        * (Bistro)
        */
-      if ( strpos( strtolower($element->innertext), "<b>") !== false &&
-           //there are bold spaces everywhere -.-
-           strpos( strtolower(str_replace("&#160;","",$element->innertext)), "<b></b>") === false) {
+      if ( $element->xpath("./b") != array()) {
         $boldElement = true;
       } else {
         $boldElement = false;
       }
-      /* trim(filterMeals($food[$i][$j])) needed b/c the day that gets 
+      /* filterMeals($food[$i][$j]) needed b/c the day that gets 
        * filtered out later is bold
        */
-      if ($bold[$x][$y] && !$boldElement && trim(filterMeals($food[$x][$y])) != ""){
+      if ($bold[$x][$y] && !$boldElement && filterMeals($food[$x][$y]) != "" 
+          && strpos(getTextFromNode($element),"€") === false 
+          && filterMeals(getTextFromNode($element)) != ""){
         $food[$x][$y] .= " – "; 
       }
       $bold[$x][$y] = $boldElement;
@@ -337,10 +329,10 @@
       if ( isset($rowPrice[$y]) ){ 
         $mealPrice[$x][$y]=$rowPrice[$y];
       }
-      if ( strpos(filterHTML($element->innertext),"€") !== false ){
-        $mealPrice[$x][$y].=" ".filterHTML($element->innertext);
-      } else {// if it's not a price, append it to the meal
-        $food[$x][$y] .= " " . filterHTML($element->innertext);
+      if ( strpos(filterHTML(getTextFromNode($element)),"€") !== false ){
+        $mealPrice[$x][$y].=" ".filterHTML(getTextFromNode($element));
+      } else {// if it's not a price, append it to the meal, 
+        $food[$x][$y] .= " " . filterHTML(getTextFromNode($element)); 
       }      
     }
 
@@ -357,8 +349,8 @@
   foreach ($plans as $plan ) {
     exec("mkdir " . $pfad . "/plans");
     exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
-    exec("pdftohtml -c ".$pfad."/plans/plan$i.pdf");
-    array_push($plansHtml,"plans/plan$i-1.html");
+    exec("pdftohtml -c -xml ".$pfad."/plans/plan$i.pdf");
+    array_push($plansHtml,"plans/plan$i.xml");
     $i++;
   }
 
@@ -379,10 +371,10 @@
         $json=parsePlan($json,120,120,620,1500,$timestamp,$calendarWeek,$planHtml,"Bistro", 0);
       // Cafeteria West
       } else if ( strpos($plans[$t], "West") !== false ){
-        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"West",75);
+        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"West",40);
       // Prittwitzstrasse
       } else if ( strpos($plans[$t], "Prittwitzstr") !== false ){
-        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"Prittwitzstr",70);
+        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"Prittwitzstr",60);
       }            
     }
     $t++;
