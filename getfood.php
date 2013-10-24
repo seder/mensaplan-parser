@@ -3,7 +3,7 @@
   include("./config.php");
 
   $plans = array();
-  $plansHtml = array();
+  $plansXML = array();
 
   $timestamp = time();
   $week = date("W", $timestamp); 
@@ -344,19 +344,19 @@
   // get the URLs of the plans we want to parse
   $plans = getPlansURLs();
 
-  // download plans and reformat them to html
+  // download plans and reformat them to XML
   $i = 0;
   foreach ($plans as $plan ) {
     exec("mkdir " . $pfad . "/plans");
     exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
     exec("pdftohtml -c -xml ".$pfad."/plans/plan$i.pdf");
-    array_push($plansHtml,"plans/plan$i.xml");
+    array_push($plansXML,"plans/plan$i.xml");
     $i++;
   }
 
   // parse plans
   $t = 0;
-  foreach ( $plansHtml as $planHtml ) {
+  foreach ( $plansXML as $planXML ) {
     preg_match_all('/\d+/', $plans[$t], $matches);
     $calendarWeek = array_pop($matches[0]);
     $year = date("Y",time());
@@ -365,16 +365,16 @@
     if ($calendarWeek >= date("W",time())) {   
       // Mensa
       if ( strpos($plans[$t], "UL") !== false ) {
-        $json=parsePlan($json,120,60,650,1500,$timestamp,$calendarWeek,$planHtml,"Mensa", 0);
+        $json=parsePlan($json,120,60,650,1500,$timestamp,$calendarWeek,$planXML,"Mensa", 0);
       // Bistro
       } else if ( strpos($plans[$t], "Bistro") !== false ){
-        $json=parsePlan($json,120,120,630,1500,$timestamp,$calendarWeek,$planHtml,"Bistro", 0);
+        $json=parsePlan($json,120,120,630,1500,$timestamp,$calendarWeek,$planXML,"Bistro", 0);
       // Cafeteria West
       } else if ( strpos($plans[$t], "West") !== false ){
-        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"West",40);
+        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"West",40);
       // Prittwitzstrasse
       } else if ( strpos($plans[$t], "Prittwitzstr") !== false ){
-        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planHtml,"Prittwitzstr",60);
+        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"Prittwitzstr",60);
       }            
     }
     $t++;
