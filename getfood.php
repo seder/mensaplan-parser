@@ -357,6 +357,7 @@
   // parse plans
   $t = 0;
   foreach ( $plansXML as $planXML ) {
+    if (!file_exists($planXML)) continue;       // sometimes there is no xml b/c there were invalid pdf-links
     preg_match_all('/\d+/', $plans[$t], $matches);
     $calendarWeek = array_pop($matches[0]);
     $year = date("Y",time());
