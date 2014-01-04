@@ -364,7 +364,7 @@
     // cut out old weeks
     if ($calendarWeek >= date("W",time())) {   
       // Mensa
-      if ( strpos($plans[$t], "UL") !== false ) {
+      if ( strpos($plans[$t], "UL") !== false && file_exists($planXML)) {
         $json=parsePlan($json,120,60,650,1500,$timestamp,$calendarWeek,$planXML,"Mensa", 0);
       // Bistro
       } else if ( strpos($plans[$t], "Bistro") !== false ){
