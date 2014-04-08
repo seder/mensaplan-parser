@@ -156,7 +156,7 @@
 
   /*
    * Build the json array we need. If something is changed here, the XML output
-   * has to be changed to.
+   * has to be changed too.
    */
   function jsonify($json, $rowsNames ,$food, $mealPrice, 
                    $columns, $rows,$place,
