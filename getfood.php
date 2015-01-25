@@ -110,7 +110,7 @@
       if ( strpos($a->href,"UL") !== false || 
            strpos($a->href,"Bistro") !== false || 
            strpos($a->href,"West") !== false || 
-           strpos($a->href,"Prittwitzstr") !== false ||
+           strpos($a->href,"Prittwitzstr") !== false //||
            //strpos($a->href,"HL") !== false ||
            //strpos($a->href,"OE") !== false 
            )
