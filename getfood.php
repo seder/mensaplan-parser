@@ -239,8 +239,12 @@
     $bold = array(array());
     
     // load xml file
-    $site = simplexml_load_file($url);  
+    $site = simplexml_load_file($url);
 
+    if ( $site == "" ) {
+      echo "plan is broken, continue with next plan";
+      return $json; 
+    }
     /* get the elements that contain the needed data and ignore the ones that 
      * are empty
      */
@@ -419,7 +423,7 @@
   $xml->asXML($outputDir."/mensaplan.xml");
 
   // clean up
-  exec("rm -rf ".$pfad."/plans");
+  //exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
   
