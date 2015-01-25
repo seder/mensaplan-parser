@@ -53,8 +53,8 @@
   function whitelisted($fooditem){
     $whitelist = array ( 'lecker und fein', 'gut und g', 'pizza', 
                          'pasta', 'schneller teller', 'wok und grill',
-                         'buffet', 'vegetarisch', 'bio', 'eintopfgerichte',
-                         'aktion', 'tagessuppe','suppen');
+                         'buffet', 'vegetarisch', 'bio', 'eintopf',
+                         'aktion', 'tagessuppe','suppen','essen');
     foreach ( $whitelist as $wlElement )
       if ( strpos($fooditem, $wlElement) !== FALSE ) return true;
     return false;
@@ -110,7 +110,10 @@
       if ( strpos($a->href,"UL") !== false || 
            strpos($a->href,"Bistro") !== false || 
            strpos($a->href,"West") !== false || 
-           strpos($a->href,"Prittwitzstr") !== false )
+           strpos($a->href,"Prittwitzstr") !== false ||
+           //strpos($a->href,"HL") !== false ||
+           //strpos($a->href,"OE") !== false 
+           )
         array_push($urls,$domain.$a->href."\n");
     }
     return $urls;
@@ -242,9 +245,10 @@
     $site = simplexml_load_file($url);
 
     if ( $site == "" ) {
-      echo "plan is broken, continue with next plan";
+      echo "plan is broken, continue with next plan\ņ";
       return $json; 
     }
+
     /* get the elements that contain the needed data and ignore the ones that 
      * are empty
      */
@@ -368,18 +372,24 @@
     // cut out old weeks
     if ($calendarWeek >= date("W",time())) {   
       // Mensa
-      if ( strpos($plans[$t], "UL") !== false && file_exists($planXML)) {
+      if ( strpos($plans[$t], "UL") !== false && file_exists($planXML) ) {
         $json=parsePlan($json,120,60,650,1500,$timestamp,$calendarWeek,$planXML,"Mensa", 0);
       // Bistro
-      } else if ( strpos($plans[$t], "Bistro") !== false ){
+      } else if ( strpos($plans[$t], "Bistro") !== false && file_exists($planXML) ){
         $json=parsePlan($json,120,120,630,1500,$timestamp,$calendarWeek,$planXML,"Bistro", 0);
       // Cafeteria West
-      } else if ( strpos($plans[$t], "West") !== false ){
+      } else if ( strpos($plans[$t], "West") !== false && file_exists($planXML) ){
         $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"West",40);
       // Prittwitzstrasse
-      } else if ( strpos($plans[$t], "Prittwitzstr") !== false ){
+      } else if ( strpos($plans[$t], "Prittwitzstr") !== false && file_exists($planXML) ){
         $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"Prittwitzstr",60);
-      }            
+      //Hochschulleitung
+      //} else if ( strpos($plans[$t], "HL") !== false && file_exists($planXML) ){
+      //  $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"Hochschulleitung",60);
+      // HS Oberer Eselsberg
+      //} else if ( strpos($plans[$t], "OE") !== false && file_exists($planXML) ){
+      //  $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"HSOE",60);
+      }           
     }
     $t++;
   }
@@ -423,7 +433,7 @@
   $xml->asXML($outputDir."/mensaplan.xml");
 
   // clean up
-  //exec("rm -rf ".$pfad."/plans");
+  exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
   
