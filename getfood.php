@@ -54,7 +54,7 @@
     $whitelist = array ( 'lecker und fein', 'gut und g', 'pizza', 
                          'pasta', 'schneller teller', 'wok und grill',
                          'buffet', 'vegetarisch', 'bio', 'eintopf',
-                         'aktion', 'tagessuppe','suppen','essen');
+                         'aktion', 'suppe','essen');
     foreach ( $whitelist as $wlElement )
       if ( strpos($fooditem, $wlElement) !== FALSE ) return true;
     return false;
@@ -388,7 +388,7 @@
     if ($calendarWeek >= date("W",time())) {   
       // Mensa
       if ( strpos($plans[$t], "UL") !== false && file_exists($planXML) ) {
-        $json=parsePlan($json,120,60,650,1500,$timestamp,$calendarWeek,$planXML,"Mensa", 0);
+        $json=parsePlan($json,120,60,1000,1500,$timestamp,$calendarWeek,$planXML,"Mensa", 0);
       // Bistro
       } else if ( strpos($plans[$t], "Bistro") !== false && file_exists($planXML) ){
         $json=parsePlan($json,120,120,630,1500,$timestamp,$calendarWeek,$planXML,"Bistro", 0);
