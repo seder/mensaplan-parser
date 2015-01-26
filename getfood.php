@@ -110,6 +110,7 @@
       if ( strpos($a->href,"UL") !== false || 
            strpos($a->href,"Bistro") !== false || 
            strpos($a->href,"West") !== false || 
+           strpos($a->href,"CB") !== false || 
            strpos($a->href,"Prittwitzstr") !== false //||
            //strpos($a->href,"HL") !== false ||
            //strpos($a->href,"OE") !== false 
@@ -255,6 +256,7 @@
     $elements = $site->xpath("//text");
     
     // get positions of rows and columns – building table
+
     foreach ( $elements as $element ){
       $top = getStyleAttribute("top",$element);
       $left = getStyleAttribute("left",$element);
@@ -271,18 +273,28 @@
       // row detection by whitelisted meal categories 
       if ( $left < $posx && $top > $posy && $top < $maxposy) {    
         $tmp = $top-$buffer;
-        if ( whitelisted(strtolower(filterHTML($text))) ){
-          array_push($rows, $tmp);  
-          array_push($rowsNames, $text);  
-        } else {
-          if ( strpos($text,"€") !==false){
-            // there's a price in the title of the row. 
-            $rowPrice[sizeof($rowsNames)-1]=$text;
+        if ( $place != "CB" ){// this doesn't work with Cafeteria B as the meal
+                              // names are pictures.
+          if ( whitelisted(strtolower(filterHTML($text))) ){
+            array_push($rows, $tmp);  
+            array_push($rowsNames, $text);  
           } else {
-            echo "$place: not found: (".$text.") <br/>\n";
+            if ( strpos($text,"€") !==false){
+              // there's a price in the title of the row. 
+              $rowPrice[sizeof($rowsNames)-1]=$text;
+            } else {
+              echo "$place: not found: (".$text.") <br/>\n";
+            }
           }
         }
       }
+    }
+    
+    if ( $place == "CB" ) {// guessing positions for Cafeteria B
+      array_push($rows, 0);  
+      array_push($rowsNames, "Mensa Vital");  
+      array_push($rows, 520);  
+      array_push($rowsNames, "Aus Topf und Pfanne");  
     }
 
     // initialise arrays
@@ -293,6 +305,8 @@
          $mealPrice[$i][$j]="";
       }
     }
+
+    echo $place."\n";
 
     // get positions of elements and sort them to the right position
     foreach ( $elements as $element ){
@@ -340,7 +354,8 @@
       if ( strpos(filterHTML(getTextFromNode($element)),"€") !== false ){
         $mealPrice[$x][$y].=" ".filterHTML(getTextFromNode($element));
       } else {// if it's not a price, append it to the meal, 
-        $food[$x][$y] .= " " . filterHTML(getTextFromNode($element)); 
+        if ( $place != "CB" || strpos(filterHTML(getTextFromNode($element)),"Kilojoule") === false )
+          $food[$x][$y] .= " " . filterHTML(getTextFromNode($element)); 
       }      
     }
 
@@ -379,7 +394,7 @@
         $json=parsePlan($json,120,120,630,1500,$timestamp,$calendarWeek,$planXML,"Bistro", 0);
       // Cafeteria West
       } else if ( strpos($plans[$t], "West") !== false && file_exists($planXML) ){
-        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"West",40);
+        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"West",100);
       // Prittwitzstrasse
       } else if ( strpos($plans[$t], "Prittwitzstr") !== false && file_exists($planXML) ){
         $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"Prittwitzstr",60);
@@ -389,6 +404,9 @@
       // HS Oberer Eselsberg
       //} else if ( strpos($plans[$t], "OE") !== false && file_exists($planXML) ){
       //  $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"HSOE",60);
+      // HS Oberer Eselsberg
+      } else if ( strpos($plans[$t], "CB") !== false && file_exists($planXML) ){
+        $json=parsePlan($json,190,250,1500,1500,$timestamp,$calendarWeek,$planXML,"CB",175);
       }           
     }
     $t++;
