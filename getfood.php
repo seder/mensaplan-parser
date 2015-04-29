@@ -54,7 +54,7 @@
     $whitelist = array ( 'lecker und fein', 'gut und g', 'pizza', 
                          'pasta', 'schneller teller', 'wok und grill',
                          'buffet', 'vegetarisch', 'bio', 'eintopf',
-                         'aktion', 'suppe','essen');
+                         'aktion', 'suppe', 'essen');
     foreach ( $whitelist as $wlElement )
       if ( strpos($fooditem, $wlElement) !== FALSE ) return true;
     return false;
@@ -62,11 +62,12 @@
    
   function filterMeals($meal) {
     $meal = str_replace(array("/ Bed."," Gast", "Stud.", "  .", "  ,", "g =")," ",$meal);
-    $meal = str_replace(array("MONTAG","DIENSTAG","MITTWOCH","MITT WOCH","DONNERSTAG","FREITAG", "FRE ITAG")," ",$meal);
-    $meal = str_replace(array("Montag","Dienstag","Mittwoch","Mitt woch","Donnerstag","Freitag", "Fre itag")," ",$meal);
+    $meal = str_replace(array("MONTAG","DIENSTAG","MITTWOCH","MITTWOC H","MITT WOCH","DONNERSTAG","FREITAG", "FRE ITAG")," ",$meal);
+    $meal = str_replace(array("Montag","Dienstag","Mittwoch","Mittwoc h","Mitt woch","Donnerstag","Freitag", "Fre itag")," ",$meal);
     $meal = str_replace(array("1","2","3","4","5","6","7","8","9","0"," ,","€","&nbsp;")," ",$meal);
     // multiple spaces to one
     $meal = preg_replace( '/\s+/', ' ', $meal );
+    $meal = str_replace(array("( )","()"),"",$meal);
     return trim(str_replace(" , ",", ",$meal));
   }
 
@@ -124,14 +125,13 @@
    * Returns the position of an element in the table or false if it's outside 
    * the table.
    */
-  function getPositionOfElement($element, $posx, $posy, $maxposx, 
-                                $buffer, $rows, $columns, $extraYbuffer){
+  function getPositionOfElement($element, $posx, $posy, $maxposx, $maxposy,
+                                $rows, $columns){
     $top = getStyleAttribute("top",$element);
     $left = getStyleAttribute("left",$element);
 
     // if the element is within these borders, it's in the table
-    if ( $left > $posx && $top > $posy && $left < $maxposx 
-              && $top < $rows[sizeof($rows)-1] + 3*$buffer + $extraYbuffer ) {
+    if ( $left > $posx && $top > $posy && $left < $maxposx && $top < $maxposy ) {
       
       $position = array();
       $position['x'] = 0;
@@ -160,11 +160,14 @@
 
   /*
    * Build the json array we need. If something is changed here, the XML output
-   * has to be changed too.
+   * has to be changed, too.
    */
-  function jsonify($json, $rowsNames ,$food, $mealPrice, 
-                   $columns, $rows,$place,
-                   $week, $timestamp){
+  function jsonify($json, $rowsNames, $food, $mealPrice, $columns, $rows,
+                   $place, $week){
+
+    $year = date("Y",time());
+    $timestamp = strtotime($year."W".$week);
+
     //get the index for the week element 
     $weekIndex = isWeekRegistered($week);
     if (!$weekIndex){
@@ -216,10 +219,10 @@
    * $timestamp, $week, $place: used for the JSON file
    * 
    * $json: the json construct, new plan gets added at the end.
-   * $extraYbuffer: In Pixel: In some plans, meals can have more rows than usual.
+   * 
    */
-  function parsePlan ($json, $posy, $posx, $maxposy, $maxposx,
-                      $timestamp, $week, $url, $place, $extraYbuffer) {
+  function parsePlan ($json, $posx, $posy, $maxposx, $maxposy,
+                      $week, $url, $place) {
 
     /* some elements are further left / right than the headline element for this
      * column or higher / lower than the headline element for this row. The 
@@ -228,7 +231,7 @@
     $buffer = 10;  
 
     //some with spaces b/c Bistro does that (wtf)
-    $days = array("montag","dienstag","mittwoch","mitt woch",
+    $days = array("montag","dienstag","mittwoch","mitt woch","mittwoc h",
                   "donnerstag","freitag", "fre itag"); 
 
     $elements = array();
@@ -254,7 +257,7 @@
      * are empty
      */
     $elements = $site->xpath("//text");
-    
+
     // get positions of rows and columns – building table
 
     foreach ( $elements as $element ){
@@ -271,29 +274,36 @@
         array_push($columns, $tmp);  
       }
       // row detection by whitelisted meal categories 
-      if ( $left < $posx && $top > $posy && $top < $maxposy) {    
+      // this doesn't work with Cafeteria B as the meal
+      // names are pictures.
+      if ( $left < $posx && $top > $posy && $top < $maxposy && $place != "CB") {    
         $tmp = $top-$buffer;
-        if ( $place != "CB" ){// this doesn't work with Cafeteria B as the meal
-                              // names are pictures.
-          if ( whitelisted(strtolower(filterHTML($text))) ){
-            array_push($rows, $tmp);  
-            array_push($rowsNames, $text);  
+        if ( whitelisted(strtolower(filterHTML($text))) ){
+          array_push($rows, $tmp);
+          array_push($rowsNames, $text);
+        } else {
+          if ( strpos($text,"€") !==false){
+            // there's a price in the title of the row.
+            $rowPrice[sizeof($rowsNames)-1]=$text;
           } else {
-            if ( strpos($text,"€") !==false){
-              // there's a price in the title of the row. 
-              $rowPrice[sizeof($rowsNames)-1]=$text;
-            } else {
-              echo "$place: not found: (".$text.") <br/>\n";
-            }
+            echo "$place: not found: (".$text.") <br/>\n";
           }
         }
       }
+      // detect end of table, change $maxposy if necessary
+      if ((strpos(strtolower(filterHTML($text)),"wir verwenden") !== false ||
+          strpos(strtolower(filterHTML($text)),"glich: ") !== false ||
+          strpos(strtolower(filterHTML($text)),"=") !== false )
+          && $top < $maxposy ) {
+        if ( $place != "CB" ) $maxposy = $top;
+      }
     }
-    
-    if ( $place == "CB" ) {// guessing positions for Cafeteria B
+
+    // guessing positions for Cafeteria B
+    if ( $place == "CB" ) {
       array_push($rows, 0);  
       array_push($rowsNames, "Mensa Vital");  
-      array_push($rows, 520);  
+      array_push($rows, 315);  //315
       array_push($rowsNames, "Aus Topf und Pfanne");  
     }
 
@@ -311,8 +321,8 @@
     // get positions of elements and sort them to the right position
     foreach ( $elements as $element ){
       
-      $position = getPositionOfElement($element, $posx, $posy, $maxposx, 
-                                $buffer, $rows, $columns, $extraYbuffer);
+      $position = getPositionOfElement($element, $posx, $posy, $maxposx, $maxposy,
+                                $rows, $columns);
 
       if ( $position === false ) {
         continue;
@@ -331,7 +341,9 @@
       } else {
         $boldElement = false;
       }
-      /* filterMeals($food[$i][$j]) needed b/c the day that gets 
+
+      /*
+       * filterMeals($food[$i][$j]) needed b/c the day that gets 
        * filtered out later is bold
        */
       if ($bold[$x][$y] && !$boldElement && filterMeals($food[$x][$y]) != "" 
@@ -361,7 +373,7 @@
 
     return jsonify($json, $rowsNames ,$food, $mealPrice, 
                    sizeof($columns),sizeof($rows),$place,
-                   $week, $timestamp);
+                   $week);
   }
 
   // get the URLs of the plans we want to parse
@@ -382,31 +394,30 @@
   foreach ( $plansXML as $planXML ) {
     preg_match_all('/\d+/', $plans[$t], $matches);
     $calendarWeek = array_pop($matches[0]);
-    $year = date("Y",time());
-    $timestamp = strtotime($year."W".$calendarWeek);
     // cut out old weeks
     if ($calendarWeek >= date("W",time())) {   
       // Mensa
       if ( strpos($plans[$t], "UL") !== false && file_exists($planXML) ) {
-        $json=parsePlan($json,120,60,1000,1500,$timestamp,$calendarWeek,$planXML,"Mensa", 0);
+        $json=parsePlan($json,40,70,1000,2000,$calendarWeek,$planXML,"Mensa");
       // Bistro
       } else if ( strpos($plans[$t], "Bistro") !== false && file_exists($planXML) ){
-        $json=parsePlan($json,120,120,630,1500,$timestamp,$calendarWeek,$planXML,"Bistro", 0);
+        $json=parsePlan($json,120,120,1500,430,$calendarWeek,$planXML,"Bistro");
       // Cafeteria West
       } else if ( strpos($plans[$t], "West") !== false && file_exists($planXML) ){
-        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"West",100);
+        $json=parsePlan($json,120,120,1500,800,$calendarWeek,$planXML,"West");
       // Prittwitzstrasse
       } else if ( strpos($plans[$t], "Prittwitzstr") !== false && file_exists($planXML) ){
-        $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"Prittwitzstr",60);
+        $json=parsePlan($json,120,120,1500,800,$calendarWeek,$planXML,"Prittwitzstr");
       //Hochschulleitung
       //} else if ( strpos($plans[$t], "HL") !== false && file_exists($planXML) ){
-      //  $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"Hochschulleitung",60);
+      //  $json=parsePlan($json,120,120,800,1500,$calendarWeek,$planXML,"Hochschulleitung",60);
       // HS Oberer Eselsberg
       //} else if ( strpos($plans[$t], "OE") !== false && file_exists($planXML) ){
-      //  $json=parsePlan($json,120,120,800,1500,$timestamp,$calendarWeek,$planXML,"HSOE",60);
-      // HS Oberer Eselsberg
+      //  $json=parsePlan($json,120,120,800,1500,$calendarWeek,$planXML,"HSOE",60);
+      // Cafeteria B
       } else if ( strpos($plans[$t], "CB") !== false && file_exists($planXML) ){
-        $json=parsePlan($json,190,250,1500,1500,$timestamp,$calendarWeek,$planXML,"CB",175);
+        //$json=parsePlan($json,180,120,700,710,$calendarWeek,$planXML,"CB");//quick fix for CW 15
+        $json=parsePlan($json,180,120,2000,450,$calendarWeek,$planXML,"CB");
       }           
     }
     $t++;
@@ -448,7 +459,7 @@
     }
   }
   //print($xml->asXML());
-  $xml->asXML($outputDir."/mensaplan.xml");
+  $xml->asXML($outputDir."mensaplan.xml");
 
   // clean up
   exec("rm -rf ".$pfad."/plans");
