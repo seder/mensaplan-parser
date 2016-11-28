@@ -54,7 +54,8 @@
     $whitelist = array ( 'lecker und fein', 'gut und g', 'pizza', 
                          'pasta', 'schneller teller', 'wok und grill',
                          'buffet', 'vegetarisch', 'bio', 'eintopf',
-                         'aktion', 'suppe', 'essen');
+                         'aktion', 'suppe', 'essen', 'woche', 'expedition','ranjid',
+                          'gourmet', 'prima klima');
     foreach ( $whitelist as $wlElement )
       if ( strpos($fooditem, $wlElement) !== FALSE ) return true;
     return false;
@@ -65,8 +66,10 @@
     $meal = str_replace(array("MONTAG","DIENSTAG","MITTWOCH","MITTWOC H","MITT WOCH","DONNERSTAG","FREITAG", "FRE ITAG")," ",$meal);
     $meal = str_replace(array("Montag","Dienstag","Mittwoch","Mittwoc h","Mitt woch","Donnerstag","Freitag", "Fre itag")," ",$meal);
     $meal = str_replace(array("1","2","3","4","5","6","7","8","9","0"," ,","€","&nbsp;")," ",$meal);
+    $meal = str_replace(array("KJ","Kcal","/ / / / /")," ",$meal);
     // multiple spaces to one
     $meal = preg_replace( '/\s+/', ' ', $meal );
+    $meal = str_replace(array("KJ","Kcal","/ / / / /")," ",$meal);
     $meal = str_replace(array("( )","()"),"",$meal);
     return trim(str_replace(" , ",", ",$meal));
   }
@@ -230,6 +233,10 @@
      */
     $buffer = 10;  
 
+    if ($place == "Mensa") {
+      $buffer = 15;
+    }
+
     //some with spaces b/c Bistro does that (wtf)
     $days = array("montag","dienstag","mittwoch","mitt woch","mittwoc h",
                   "donnerstag","freitag", "fre itag"); 
@@ -303,7 +310,7 @@
     if ( $place == "CB" ) {
       array_push($rows, 0);  
       array_push($rowsNames, "Mensa Vital");  
-      array_push($rows, 315);  //315
+      array_push($rows, 300);  //315
       array_push($rowsNames, "Aus Topf und Pfanne");  
     }
 
@@ -417,7 +424,9 @@
       // Cafeteria B
       } else if ( strpos($plans[$t], "CB") !== false && file_exists($planXML) ){
         //$json=parsePlan($json,180,120,700,710,$calendarWeek,$planXML,"CB");//quick fix for CW 15
-        $json=parsePlan($json,180,120,2000,450,$calendarWeek,$planXML,"CB");
+        //$json=parsePlan($json,180,120,2000,450,$calendarWeek,$planXML,"CB");
+        if ( $calendarWeek < 53 )
+          $json=parsePlan($json,180,120,2000,400,$calendarWeek,$planXML,"CB");
       }           
     }
     $t++;
