@@ -425,7 +425,7 @@
       } else if ( strpos($plans[$t], "CB") !== false && file_exists($planXML) ){
         //$json=parsePlan($json,180,120,700,710,$calendarWeek,$planXML,"CB");//quick fix for CW 15
         //$json=parsePlan($json,180,120,2000,450,$calendarWeek,$planXML,"CB");
-        if ( $calendarWeek < 53 )
+        if ( $calendarWeek < 53 ) // working around Studierendenwerk stupidity
           $json=parsePlan($json,180,120,2000,400,$calendarWeek,$planXML,"CB");
       }           
     }
