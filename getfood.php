@@ -105,21 +105,21 @@
    */
   function getPlansURLs(){
     $urls = array();
-    $domain = "http://www.studentenwerk-ulm.de/";
-    $url = $domain."/hochschulgastronomie/speiseplaene.html";
+    $domain = "https://www.studierendenwerk-ulm.de/";
+    $url = $domain."/essen-trinken/speiseplaene/";
     $site = new simple_html_dom();  
     $site->load_file($url);
     $as = $site->find("a");
     foreach ( $as as $a ) {
-      if ( strpos($a->href,"UL") !== false || 
-           strpos($a->href,"Bistro") !== false || 
-           strpos($a->href,"West") !== false || 
-           strpos($a->href,"CB") !== false || 
-           strpos($a->href,"Prittwitzstr") !== false //||
+      if ( strpos($a->href,"ulm_mensa-uni") !== false || 
+           strpos($a->href,"ulm_uni-bistro") !== false || 
+           strpos($a->href,"ulm_cafeteria-uni-west") !== false || 
+           strpos($a->href,"ulm_cafeteria-b-mensavital") !== false || 
+           strpos($a->href,"ulm_mensa-hs-prittwitzstrasse") !== false //||
            //strpos($a->href,"HL") !== false ||
            //strpos($a->href,"OE") !== false 
            )
-        array_push($urls,$domain.$a->href."\n");
+        array_push($urls,$a->href."\n");
     }
     return $urls;
   }
@@ -404,16 +404,16 @@
     // cut out old weeks
     if ($calendarWeek >= date("W",time())) {   
       // Mensa
-      if ( strpos($plans[$t], "UL") !== false && file_exists($planXML) ) {
+      if ( strpos($plans[$t], "ulm_mensa-uni") !== false && file_exists($planXML) ) {
         $json=parsePlan($json,40,70,1000,2000,$calendarWeek,$planXML,"Mensa");
       // Bistro
-      } else if ( strpos($plans[$t], "Bistro") !== false && file_exists($planXML) ){
+      } else if ( strpos($plans[$t], "ulm_uni-bistro") !== false && file_exists($planXML) ){
         $json=parsePlan($json,120,120,1500,430,$calendarWeek,$planXML,"Bistro");
       // Cafeteria West
-      } else if ( strpos($plans[$t], "West") !== false && file_exists($planXML) ){
+      } else if ( strpos($plans[$t], "ulm_cafeteria-uni-west") !== false && file_exists($planXML) ){
         $json=parsePlan($json,120,120,1500,800,$calendarWeek,$planXML,"West");
       // Prittwitzstrasse
-      } else if ( strpos($plans[$t], "Prittwitzstr") !== false && file_exists($planXML) ){
+      } else if ( strpos($plans[$t], "ulm_mensa-hs-prittwitzstrasse") !== false && file_exists($planXML) ){
         $json=parsePlan($json,120,120,1500,800,$calendarWeek,$planXML,"Prittwitzstr");
       //Hochschulleitung
       //} else if ( strpos($plans[$t], "HL") !== false && file_exists($planXML) ){
