@@ -391,7 +391,7 @@
   foreach ($plans as $plan ) {
     exec("mkdir " . $pfad . "/plans");
     exec("wget --output-document ".$pfad."/plans/plan$i.pdf ".$plan);
-    exec("pdftohtml -c -xml ".$pfad."/plans/plan$i.pdf");
+    exec("pdftohtml -i -c -xml ".$pfad."/plans/plan$i.pdf");
     array_push($plansXML,"plans/plan$i.xml");
     $i++;
   }
@@ -471,7 +471,7 @@
   $xml->asXML($outputDir."mensaplan.xml");
 
   // clean up
-  exec("rm -rf ".$pfad."/plans");
+  //exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
   
