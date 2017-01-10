@@ -169,7 +169,7 @@
                    $place, $week){
 
     $year = date("Y",time());
-    $timestamp = strtotime($year."W".$week);
+    $timestamp = strtotime($year."W".str_pad($week, 2, '0', STR_PAD_LEFT));
 
     //get the index for the week element 
     $weekIndex = isWeekRegistered($week);
