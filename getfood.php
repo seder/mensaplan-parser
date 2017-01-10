@@ -233,10 +233,6 @@
      */
     $buffer = 10;  
 
-    if ($place == "Mensa") {
-      $buffer = 15;
-    }
-
     //some with spaces b/c Bistro does that (wtf)
     $days = array("montag","dienstag","mittwoch","mitt woch","mittwoc h",
                   "donnerstag","freitag", "fre itag"); 
@@ -278,7 +274,8 @@
       // column detection by day
       $tmp = $left-$buffer;
       if (in_array(strtolower(trim($text)),$days)) {
-        array_push($columns, $tmp);  
+        array_push($columns, $tmp);
+        print($text);
       }
       // row detection by whitelisted meal categories 
       // this doesn't work with Cafeteria B as the meal
@@ -310,7 +307,7 @@
     if ( $place == "CB" ) {
       array_push($rows, 0);  
       array_push($rowsNames, "Mensa Vital");  
-      array_push($rows, 300);  //315
+      array_push($rows, 470);  //315
       array_push($rowsNames, "Aus Topf und Pfanne");  
     }
 
@@ -405,10 +402,10 @@
     if ($calendarWeek >= date("W",time())) {   
       // Mensa
       if ( strpos($plans[$t], "ulm_mensa-uni") !== false && file_exists($planXML) ) {
-        $json=parsePlan($json,40,70,1000,2000,$calendarWeek,$planXML,"Mensa");
+        $json=parsePlan($json,100,70,1500,2000,$calendarWeek,$planXML,"Mensa");
       // Bistro
       } else if ( strpos($plans[$t], "ulm_uni-bistro") !== false && file_exists($planXML) ){
-        $json=parsePlan($json,120,120,1500,430,$calendarWeek,$planXML,"Bistro");
+        $json=parsePlan($json,120,120,1500,500,$calendarWeek,$planXML,"Bistro");
       // Cafeteria West
       } else if ( strpos($plans[$t], "ulm_cafeteria-uni-west") !== false && file_exists($planXML) ){
         $json=parsePlan($json,120,120,1500,800,$calendarWeek,$planXML,"West");
@@ -422,11 +419,11 @@
       //} else if ( strpos($plans[$t], "OE") !== false && file_exists($planXML) ){
       //  $json=parsePlan($json,120,120,800,1500,$calendarWeek,$planXML,"HSOE",60);
       // Cafeteria B
-      } else if ( strpos($plans[$t], "CB") !== false && file_exists($planXML) ){
+      } else if ( strpos($plans[$t], "ulm_cafeteria-b-mensavital") !== false && file_exists($planXML) ){
         //$json=parsePlan($json,180,120,700,710,$calendarWeek,$planXML,"CB");//quick fix for CW 15
         //$json=parsePlan($json,180,120,2000,450,$calendarWeek,$planXML,"CB");
-        if ( $calendarWeek < 53 ) // working around Studierendenwerk stupidity
-          $json=parsePlan($json,180,120,2000,400,$calendarWeek,$planXML,"CB");
+        if ( $calendarWeek < 53 ) // workaround
+          $json=parsePlan($json,180,120,2000,700,$calendarWeek,$planXML,"CB");
       }           
     }
     $t++;
