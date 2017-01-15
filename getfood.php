@@ -6,7 +6,7 @@
   $plansXML = array();
 
   $timestamp = time();
-  $week = date("W", $timestamp); 
+  $week = date("W", $timestamp);
 
   $weeksRegistered = array();
   $daysRegistered = array();
@@ -111,13 +111,18 @@
     $site->load_file($url);
     $as = $site->find("a");
     foreach ( $as as $a ) {
-      if ( strpos($a->href,"ulm_mensa-uni") !== false || 
-           strpos($a->href,"ulm_uni-bistro") !== false || 
-           strpos($a->href,"ulm_cafeteria-uni-west") !== false || 
-           strpos($a->href,"ulm_cafeteria-b-mensavital") !== false || 
-           strpos($a->href,"ulm_mensa-hs-prittwitzstrasse") !== false //||
+      if ((strpos($a->href,"mensa-uni") !== false || 
+           strpos($a->href,"uni-bistro") !== false || 
+           strpos($a->href,"cafeteria-uni-west") !== false || 
+           strpos($a->href,"cafeteria-b-mensavital") !== false || 
+           strpos($a->href,"rittwitzstr") !== false ||
+           strpos($a->href,"UL") !== false ||
+           strpos($a->href,"Bistro") !== false || 
+           strpos($a->href,"CB") !== false || 
+           strpos($a->href,"West") !== false //||
            //strpos($a->href,"HL") !== false ||
            //strpos($a->href,"OE") !== false 
+           ) && (strpos($a->href,".pdf") !== false || strpos($a->href,".PDF") !== false)
            )
         array_push($urls,$a->href."\n");
     }
@@ -231,7 +236,7 @@
      * column or higher / lower than the headline element for this row. The 
      * buffer exists to account for this.
      */
-    $buffer = 10;  
+    $buffer = 5; 
 
     //some with spaces b/c Bistro does that (wtf)
     $days = array("montag","dienstag","mittwoch","mitt woch","mittwoc h",
@@ -275,7 +280,6 @@
       $tmp = $left-$buffer;
       if (in_array(strtolower(trim($text)),$days)) {
         array_push($columns, $tmp);
-        print($text);
       }
       // row detection by whitelisted meal categories 
       // this doesn't work with Cafeteria B as the meal
@@ -399,18 +403,18 @@
     preg_match_all('/\d+/', $plans[$t], $matches);
     $calendarWeek = array_pop($matches[0]);
     // cut out old weeks
-    if ($calendarWeek >= date("W",time())) {   
+    if ($calendarWeek >= date("W",time())) {
       // Mensa
-      if ( strpos($plans[$t], "ulm_mensa-uni") !== false && file_exists($planXML) ) {
-        $json=parsePlan($json,100,70,1500,2000,$calendarWeek,$planXML,"Mensa");
+      if ( (strpos($plans[$t], "mensa-uni") !== false || strpos($plans[$t], "UL") !== false) && file_exists($planXML) ) {
+        $json=parsePlan($json,60,70,1500,2000,$calendarWeek,$planXML,"Mensa");
       // Bistro
-      } else if ( strpos($plans[$t], "ulm_uni-bistro") !== false && file_exists($planXML) ){
-        $json=parsePlan($json,120,120,1500,500,$calendarWeek,$planXML,"Bistro");
+      } else if ( (strpos($plans[$t], "uni-bistro") !== false || strpos($plans[$t], "Bistro") !== false) && file_exists($planXML) ){
+        $json=parsePlan($json,120,120,1500,430,$calendarWeek,$planXML,"Bistro");
       // Cafeteria West
-      } else if ( strpos($plans[$t], "ulm_cafeteria-uni-west") !== false && file_exists($planXML) ){
+      } else if ( (strpos($plans[$t], "cafeteria-uni-west") !== false || strpos($plans[$t], "West") !== false)&& file_exists($planXML) ){
         $json=parsePlan($json,120,120,1500,800,$calendarWeek,$planXML,"West");
       // Prittwitzstrasse
-      } else if ( strpos($plans[$t], "ulm_mensa-hs-prittwitzstrasse") !== false && file_exists($planXML) ){
+      } else if (strpos($plans[$t], "rittwitzstr") !== false && file_exists($planXML) ){
         $json=parsePlan($json,120,120,1500,800,$calendarWeek,$planXML,"Prittwitzstr");
       //Hochschulleitung
       //} else if ( strpos($plans[$t], "HL") !== false && file_exists($planXML) ){
@@ -419,12 +423,12 @@
       //} else if ( strpos($plans[$t], "OE") !== false && file_exists($planXML) ){
       //  $json=parsePlan($json,120,120,800,1500,$calendarWeek,$planXML,"HSOE",60);
       // Cafeteria B
-      } else if ( strpos($plans[$t], "ulm_cafeteria-b-mensavital") !== false && file_exists($planXML) ){
+      } else if ( (strpos($plans[$t], "cafeteria-b-mensavital") !== false || strpos($plans[$t], "CB") !== false) && file_exists($planXML) ){
         //$json=parsePlan($json,180,120,700,710,$calendarWeek,$planXML,"CB");//quick fix for CW 15
         //$json=parsePlan($json,180,120,2000,450,$calendarWeek,$planXML,"CB");
         if ( $calendarWeek < 53 ) // workaround
           $json=parsePlan($json,180,120,2000,700,$calendarWeek,$planXML,"CB");
-      }           
+      }
     }
     $t++;
   }
