@@ -409,7 +409,7 @@
         $json=parsePlan($json,60,70,1500,2000,$calendarWeek,$planXML,"Mensa");
       // Bistro
       } else if ( (strpos($plans[$t], "uni-bistro") !== false || strpos($plans[$t], "Bistro") !== false) && file_exists($planXML) ){
-        $json=parsePlan($json,120,120,1500,430,$calendarWeek,$planXML,"Bistro");
+        $json=parsePlan($json,120,120,1500,830,$calendarWeek,$planXML,"Bistro");
       // Cafeteria West
       } else if ( (strpos($plans[$t], "cafeteria-uni-west") !== false || strpos($plans[$t], "West") !== false)&& file_exists($planXML) ){
         $json=parsePlan($json,120,120,1500,800,$calendarWeek,$planXML,"West");
@@ -472,7 +472,7 @@
   $xml->asXML($outputDir."mensaplan.xml");
 
   // clean up
-  //exec("rm -rf ".$pfad."/plans");
+  exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
   
