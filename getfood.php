@@ -311,7 +311,7 @@
     if ( $place == "CB" ) {
       array_push($rows, 0);  
       array_push($rowsNames, "Mensa Vital");  
-      array_push($rows, 470);  //315
+      array_push($rows, 450);  //315
       array_push($rowsNames, "Aus Topf und Pfanne");  
     }
 
@@ -427,7 +427,7 @@
         //$json=parsePlan($json,180,120,700,710,$calendarWeek,$planXML,"CB");//quick fix for CW 15
         //$json=parsePlan($json,180,120,2000,450,$calendarWeek,$planXML,"CB");
         if ( $calendarWeek < 53 ) // workaround
-          $json=parsePlan($json,180,120,2000,700,$calendarWeek,$planXML,"CB");
+          $json=parsePlan($json,180,120,2000,630,$calendarWeek,$planXML,"CB");
       }
     }
     $t++;
@@ -472,7 +472,7 @@
   $xml->asXML($outputDir."mensaplan.xml");
 
   // clean up
-  exec("rm -rf ".$pfad."/plans");
+  //exec("rm -rf ".$pfad."/plans");
   
   echo "done\n";
   
