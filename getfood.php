@@ -192,7 +192,7 @@
 
       //get index for the day element
       $dayIndex = isDayRegistered(date("Y-m-d", $timestamp),$weekIndex);
-      if(!$dayIndex){
+      if($dayIndex === FALSE){
         registerDay(date("Y-m-d", $timestamp),$weekIndex);
         $dayIndex = isDayRegistered(date("Y-m-d", $timestamp),$weekIndex);
       }
