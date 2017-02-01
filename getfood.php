@@ -178,7 +178,8 @@
 
     //get the index for the week element 
     $weekIndex = isWeekRegistered($week);
-    if (!$weekIndex){
+
+    if ($weekIndex === FALSE){
       registerWeek($week);
       $weekIndex = isWeekRegistered($week);
       global $daysRegistered;
@@ -187,7 +188,7 @@
 
     $json["weeks"][$weekIndex]["weekNumber"] = (int) $week;
     
-    for ( $i = 0; $i < $columns; $i++){
+    for ( $i = 0; $i < $columns; $i++ ){
 
       //get index for the day element
       $dayIndex = isDayRegistered(date("Y-m-d", $timestamp),$weekIndex);
@@ -402,6 +403,7 @@
   foreach ( $plansXML as $planXML ) {
     preg_match_all('/\d+/', $plans[$t], $matches);
     $calendarWeek = array_pop($matches[0]);
+    $calendarWeek = sprintf("%d", $calendarWeek);
     // cut out old weeks
     if ($calendarWeek >= date("W",time())) {
       // Mensa
@@ -411,7 +413,7 @@
       } else if ( (strpos($plans[$t], "uni-bistro") !== false || strpos($plans[$t], "Bistro") !== false) && file_exists($planXML) ){
         $json=parsePlan($json,120,120,1500,830,$calendarWeek,$planXML,"Bistro");
       // Cafeteria West
-      } else if ( (strpos($plans[$t], "cafeteria-uni-west") !== false || strpos($plans[$t], "West") !== false)&& file_exists($planXML) ){
+      } else if ( (strpos($plans[$t], "cafeteria-uni-west") !== false || strpos($plans[$t], "West") !== false) && file_exists($planXML) ){
         $json=parsePlan($json,120,120,1500,800,$calendarWeek,$planXML,"West");
       // Prittwitzstrasse
       } else if (strpos($plans[$t], "rittwitzstr") !== false && file_exists($planXML) ){
