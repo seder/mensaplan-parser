@@ -205,6 +205,7 @@
           $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k] = array();
           $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["category"]= $rowsNames[$j];
           $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["meal"]= filterMeals($food[$i][$j]);
+          $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["meal_raw"]=$food[$i][$j];
           if ( $mealPrice[$i][$j] != "" ){
             $json["weeks"][$weekIndex]["days"][$dayIndex][$place]["meals"][$k]["price"]= filterPrice($mealPrice[$i][$j]);
           }
