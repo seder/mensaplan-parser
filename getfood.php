@@ -238,7 +238,7 @@
      * column or higher / lower than the headline element for this row. The
      * buffer exists to account for this.
      */
-    $buffer = 5;
+    $buffer = 15;
 
     $days = array("montag","dienstag","mittwoch","donnerstag","freitag");
 
@@ -423,13 +423,13 @@
     $calendarWeek = array_pop($matches[0]);
     $calendarWeek = sprintf("%d", $calendarWeek);
     // cut out old weeks
-    if ($calendarWeek >= date("W",time())) {
+    if ($calendarWeek >= date("W",time()) && $calendarWeek != 52) {
       // Mensa
       if ( (strpos($plans[$t], "mensa-uni") !== false || strpos($plans[$t], "UL") !== false) && file_exists($planXML) ) {
         $json=parsePlan($json,60,70,1500,2000,$calendarWeek,$planXML,"Mensa");
       // Bistro
       } else if ( (strpos($plans[$t], "uni-bistro") !== false || strpos($plans[$t], "Bistro") !== false) && file_exists($planXML) ){
-        $json=parsePlan($json,120,120,1500,830,$calendarWeek,$planXML,"Bistro");
+        $json=parsePlan($json,120,120,1500,750,$calendarWeek,$planXML,"Bistro");
       // Cafeteria West
       } else if ( (strpos($plans[$t], "cafeteria-uni-west") !== false || strpos($plans[$t], "West") !== false) && file_exists($planXML) ){
         $json=parsePlan($json,120,120,1500,800,$calendarWeek,$planXML,"West");
@@ -460,6 +460,7 @@
 
   // Save also as XML for compatibility reasons
   $xml = new SimpleXMLElement('<mensaplan/>');
+  //if (false){
   foreach ( $json['weeks'] as $weekkey => $weekvalue ) {
     //echo $weekvalue['weekNumber']."<br>";
     // add weeks
@@ -484,6 +485,7 @@
         }
       }
     }
+    //}
   }
   $xml->asXML($outputDir."mensaplan.xml");
 
